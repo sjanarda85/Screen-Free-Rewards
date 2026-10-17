@@ -1,6 +1,6 @@
 # Screen Free Rewards
 
-Charcoal and gold dashboard for screen-free time. Children earn points for time away from screens. Parents set rewards, schedules, and approve requests.
+Delight Agencies themed dashboard for screen-free time, in teal or blue, light or dark (switch in the header; the choice is remembered on the device). Children earn points for time away from screens. Parents set rewards, schedules, and approve requests.
 
 ## Open the app
 

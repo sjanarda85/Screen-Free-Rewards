@@ -13,7 +13,7 @@ function Home() {
         width: "100%",
         height: "100%",
         border: "none",
-        background: "#090909",
+        background: "transparent",
       }}
     />
   );
