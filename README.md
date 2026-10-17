@@ -13,7 +13,8 @@ Open [index.html](index.html) in a browser. No install step. It is always the la
 | `index.html`, `public/screen-free.html` | Latest app (same file) |
 | `releases/app/` | Every app version, never edited after release |
 | `releases/email/` | Sample daily summary email (HTML, text, preview image) and the PDF report in dark and light |
-| `tools/` | Script that draws the summary PDF |
+| `apps-script/` | Mail link script and setup steps |
+| `tools/` | Optional Python script that draws the same PDF |
 | `releases/screenshots/vX.Y.Z/` | Screenshots of each version |
 | `archive/` | Design explorations that are not used in the app |
 | `CHANGELOG.md`, `VERSION`, `CLAUDE.md` | History, current version, and the release rules |
@@ -28,6 +29,10 @@ Open [index.html](index.html) in a browser. No install step. It is always the la
 
 Parent PIN defaults to `1234`. In Profile, add both parents' name, email, and mobile, and turn on "both at work". Requests show up immediately under Requests. Approve or decline there. Approving a suggestion adds it to Rewards. Declining a redeem refunds the points.
 
-## Email to parents
+## Email to parents (one click)
 
-Add one or both parent emails under Profile (signing in as a parent with an email also saves it). Child requests, redeem requests, a manual **Email today's summary** (Reports) and **Send test email** (Profile) all go through FormSubmit. The first message to a new address sends an Activate email from FormSubmit: open it once and tap the button, then every later message arrives on its own. If sending fails the app offers to open your email app with the message ready. Set **Send log every** to Daily or Weekly to have the summary sent automatically after 20:00 while the app is open on a device. The summary uses the same layout as the Thakazhi Peedika daily summary (**Preview summary** shows it, **Download summary PDF** opens the print-ready A4 report: choose Save as PDF).
+Emails work the same way as the Thakazhi Peedika daily summary: the app builds the PDF report itself and posts it to a Google Apps Script mail link that sends it from your Google account. No activation, no mail app.
+
+One-time setup (about 3 minutes): follow [apps-script/SETUP.md](apps-script/SETUP.md), then paste the link under Parent controls, Profile, Mail link. After that **Send test email**, **Email today's summary** and every child request email both parents on one click, with the PDF attached. If no link is saved yet, pressing **Send test email** asks for it once.
+
+Set **Send log every** to Daily or Weekly to send the summary automatically after 20:00 while the app is open. **Download summary PDF** saves the report directly. **Preview summary** shows the HTML version.
