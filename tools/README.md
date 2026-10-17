@@ -10,6 +10,6 @@
 
 `test-relay.mjs` runs the relay script (`apps-script/Code.gs`) in Node against stand-ins for the Google services and checks verification codes, tokens, limits and attachment rules: `node tools/test-relay.mjs`.
 
-`make_guide_pdf.py` builds the parent guide PDF (dark and light): `python3 tools/make_guide_pdf.py 1.10.0 out_dir`. The dark one is embedded in the app.
+`make_guide_pdf.py` builds the parent guide PDF (dark and light): `python3 tools/make_guide_pdf.py 1.10.1 out_dir`. The dark one is embedded in the app.
 
 `local-relay.mjs` runs the relay script as a local web server (no Google needed) and `companion-simulator.mjs` plays the native companion against it or against the real relay. See `docs/COMPANION.md`.
