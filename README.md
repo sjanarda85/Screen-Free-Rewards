@@ -1,6 +1,6 @@
 # Screen Free Rewards
 
-Kid-friendly Delight Agencies themed app and dashboard for screen-free time, in teal or blue, light or dark (switch in the header; the choice is remembered on the device). Meet the star buddy: it greets children on sign in, hops and throws confetti when they earn points. Children earn points for time away from screens. Parents set rewards, schedules, and approve requests.
+Premium dashboard for screen-free time. Children earn points for time away from screens. Parents set rewards, schedules, and approve points and requests. Two themes, blue and charcoal, switched from the header and remembered on the device.
 
 ## Open the app
 
@@ -17,3 +17,11 @@ Open [index.html](index.html) in a browser. No install step. The same file is [s
 Parent PIN defaults to `1234`. In Profile, add both parents' name, email, and mobile, and turn on "both at work". Requests show up immediately under Requests. Approve or decline there. Approving a suggestion adds it to Rewards. Declining a redeem refunds the points.
 
 A downloaded HTML file cannot push notifications by itself. The request is stored in the app at once, and if emails are saved it also opens a message addressed to both parents.
+
+## Parent dashboard
+
+Overview shows balance, pending points (Approve points moves them to the balance), minutes screen free today, open requests, a seven day chart and recent activity.
+
+## Archive
+
+`archive/mascot-concepts` keeps the earlier mascot and logo explorations. They are not used in the app.
