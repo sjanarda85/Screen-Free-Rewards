@@ -4,7 +4,18 @@ Premium grained-charcoal dashboard for screen-free time. Children earn points fo
 
 ## Open the app
 
-Open [index.html](index.html) in a browser. No install step. The same file is [screen-free-rewards-final.html](screen-free-rewards-final.html).
+Open [index.html](index.html) in a browser. No install step. It is always the latest version (see `VERSION` and [CHANGELOG.md](CHANGELOG.md)). Every version is kept as its own file in `releases/app/`, named `screen-free-rewards_app_v{version}_{date}_{label}.html`. The version also shows inside the app on the sign-in screen and the parent dashboard.
+
+## Files and versions
+
+| Where | What |
+|---|---|
+| `index.html`, `public/screen-free.html` | Latest app (same file) |
+| `releases/app/` | Every app version, never edited after release |
+| `releases/email/` | Sample daily summary email (HTML, text and preview image) |
+| `releases/screenshots/vX.Y.Z/` | Screenshots of each version |
+| `archive/` | Design explorations that are not used in the app |
+| `CHANGELOG.md`, `VERSION`, `CLAUDE.md` | History, current version, and the release rules |
 
 ## Child
 

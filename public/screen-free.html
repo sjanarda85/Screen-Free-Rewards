@@ -158,6 +158,8 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: rgb(var
 .modal-box { background: rgb(var(--surface)); border: 1px solid rgb(var(--line)); border-radius: 22px; padding: 24px; max-width: 420px; width: 100%; max-height: 82vh; overflow: auto; box-shadow: 0 30px 60px -20px rgb(0 0 0 / .8); animation: pop .25s cubic-bezier(.2,1.2,.4,1) both; }
 @keyframes pop { from { opacity: 0; transform: scale(.96) translateY(6px); } to { opacity: 1; transform: none; } }
 .modal-box h3 { font-family: var(--font-display); font-size: 20px; font-weight: 600; letter-spacing: 0; text-transform: none; color: rgb(var(--ink)); margin-bottom: 4px; }
+.ver { margin-top: 16px; font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: rgb(var(--muted) / .8); }
+.ver-inline { margin-left: 8px; padding: 2px 8px; border: 1px solid rgb(var(--line)); border-radius: 999px; letter-spacing: .08em; font-weight: 600; }
 .toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; z-index: 300; padding: 12px 20px; border-radius: 14px; background: rgb(var(--raised)); border: 1px solid rgb(var(--accent) / .5); color: rgb(var(--ink)); font-weight: 600; box-shadow: 0 20px 40px -16px rgb(0 0 0 / .8); transition: opacity .25s, transform .25s; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 @media (max-width: 520px) {
@@ -214,6 +216,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: rgb(var
         <span class="backlink" id="backLogin2">Back</span>
       </div>
     </div>
+    <div class="ver" data-ver>Screen Free Rewards</div>
   </div>
 </div>
 
@@ -238,7 +241,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: rgb(var
 
 <div id="parentView" class="view">
   <div class="page-head">
-    <div><span class="eyebrow">Parent dashboard</span><h2>Parent Controls</h2></div>
+    <div><span class="eyebrow">Parent dashboard <span class="ver-inline" data-ver-inline></span></span><h2>Parent Controls</h2></div>
     <button class="btn secondary" id="toChild">Back to child</button>
   </div>
   <div class="tabs">
@@ -375,6 +378,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: rgb(var
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
 function newPdf(){ if(!window.jspdf){ alert('PDF tools could not load. Check the internet connection and try again.'); return null; } return new window.jspdf.jsPDF(); }
+const APP_VERSION='1.1.0';
 let state = {users:[], active:null, pin:'1234', rate:1, schedules:[], log:[], loggedIn:false};
 function load(){ try{ const r=localStorage.getItem('sfr4'); if(r) Object.assign(state, JSON.parse(r)); }catch(e){} }
 function save(){ try{ localStorage.setItem('sfr4', JSON.stringify(state)); }catch(e){} }
@@ -573,7 +577,7 @@ function summaryText(u){
   L.push('POINTS','Balance: '+d.balance+' pts','Pending approval: '+d.pending+' pts','Earned today: '+d.earned+' pts','Redeemed today: '+d.redeemed+' pts','');
   L.push('SCREEN-FREE TIME','Scheduled: '+d.scheduled+' min','Actual timer: '+d.mins+' min','Unused: '+d.unused+' min','');
   L.push('OPEN REQUESTS ('+d.open.length+')'); d.open.forEach(r=>L.push('- '+r.kind+': '+r.name+(r.cost?' ('+r.cost+' pts)':''))); if(!d.open.length) L.push('None.');
-  L.push('','Open Screen Free Rewards, sign in as a parent, then approve points and requests.');
+  L.push('','Open Screen Free Rewards, sign in as a parent, then approve points and requests.','Screen Free Rewards v'+APP_VERSION);
   return L.join('\n');
 }
 function summaryHTML(u,opts){
@@ -602,7 +606,7 @@ ${sec('Open tasks ('+d.tasks.length+')')}${text(d.tasks.length?d.tasks.map(x=>'&
 ${sec('Activity today')}${text(d.log.length?d.log.map(l=>'&bull; '+new Date(l.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+' &middot; '+esc(l.t.replace(/_/g,' '))+': '+esc(l.d)).join('<br>'):'No activity yet today.')}
 ${sec('Commentary')}${text(comment)}
 </table></td></tr>
-<tr><td style="padding:0 28px 26px 28px;"><div style="border-top:1px solid #2b2d31;padding-top:16px;${F}font-size:12px;color:#9c9da0;line-height:1.6;"><b style="color:#eeece7;font-size:13px;">Screen Free Rewards</b><br>Open the app, sign in as a parent, then approve points under Overview and decide requests under Requests.<br>${opts.test?'This is a test message sent to check delivery.':'Sent from the parent dashboard.'}</div></td></tr>
+<tr><td style="padding:0 28px 26px 28px;"><div style="border-top:1px solid #2b2d31;padding-top:16px;${F}font-size:12px;color:#9c9da0;line-height:1.6;"><b style="color:#eeece7;font-size:13px;">Screen Free Rewards</b><br>Open the app, sign in as a parent, then approve points under Overview and decide requests under Requests.<br>${opts.test?'This is a test message sent to check delivery.':'Sent from the parent dashboard.'} &middot; v${APP_VERSION}</div></td></tr>
 </table></td></tr></table></body></html>`;
 }
 const MAIL_STATE={};
@@ -809,6 +813,8 @@ document.getElementById('blockApps').onclick = () => {
   logA('remote_block', 'App block requested', 'parent');
   document.getElementById('remoteStatus').textContent = 'Block request logged. Native app required to enforce.';
 };
+document.querySelectorAll('[data-ver]').forEach(e=>e.textContent='Screen Free Rewards v'+APP_VERSION);
+document.querySelectorAll('[data-ver-inline]').forEach(e=>e.textContent='v'+APP_VERSION);
 load();
 if(!state.users.length){
   const id=1;

@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<!-- Screen Free Rewards v0.2.0 (delight-teal-blue), 2026-10-17. Archived release; source commit ce705fe. -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0c1211" media="(prefers-color-scheme: dark)"><meta name="theme-color" content="#f4f6f5" media="(prefers-color-scheme: light)">
+<title>Screen Free Rewards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+(function(){var d=document.documentElement,t=null,p=null;try{t=localStorage.getItem('sfr-theme');p=localStorage.getItem('sfr-palette');}catch(e){}
+if(t!=='light'&&t!=='dark')t=(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';
+d.setAttribute('data-theme',t);d.setAttribute('data-palette',p==='blue'?'blue':'teal');})();
+</script>
+<style>
+/* Delight Agencies theme: teal and blue palettes, each with light and dark. Tokens are RGB triplets so alpha works: rgb(var(--accent) / .2). */
+:root {
+  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --bg: 244 246 245; --surface: 255 255 255; --raised: 248 250 249; --ink: 20 33 31; --muted: 92 108 104;
+  --line: 218 225 222; --accent: 16 98 86; --accent2: 24 128 112; --onaccent: 255 255 255;
+  --gold: 164 118 24; --neg: 186 38 52; --pos: 20 128 72;
+  --shadow: 0 1px 2px rgb(20 33 31 / .06), 0 8px 24px -8px rgb(20 33 31 / .12);
+  color-scheme: light;
+}
+:root[data-palette="blue"] {
+  --bg: 241 245 249; --surface: 255 255 255; --raised: 247 249 252; --ink: 15 23 42; --muted: 100 116 139;
+  --line: 218 226 238; --accent: 37 99 235; --accent2: 59 130 246; --onaccent: 255 255 255;
+  --gold: 71 85 105; --neg: 185 28 28; --pos: 37 99 235;
+  --shadow: 0 1px 2px rgb(15 23 42 / .06), 0 8px 24px -8px rgb(15 23 42 / .14);
+}
+:root[data-theme="dark"] {
+  --bg: 12 18 17; --surface: 20 28 27; --raised: 26 36 34; --ink: 226 234 231; --muted: 142 160 155;
+  --line: 42 54 52; --accent: 72 190 166; --accent2: 45 150 130; --onaccent: 8 22 19;
+  --gold: 226 178 76; --neg: 244 108 112; --pos: 84 204 136;
+  --shadow: 0 1px 2px rgb(0 0 0 / .4), 0 12px 32px -10px rgb(0 0 0 / .6);
+  color-scheme: dark;
+}
+:root[data-theme="dark"][data-palette="blue"] {
+  --bg: 10 16 30; --surface: 17 25 43; --raised: 23 33 55; --ink: 226 232 240; --muted: 148 163 184;
+  --line: 38 50 74; --accent: 96 165 250; --accent2: 59 130 246; --onaccent: 8 15 30;
+  --gold: 203 213 225; --neg: 248 113 113; --pos: 96 165 250;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: rgb(var(--bg));
+  color: rgb(var(--ink));
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  min-height: 100dvh;
+  transition: background-color .25s ease, color .25s ease;
+}
+:focus-visible { outline: 2px solid rgb(var(--accent)); outline-offset: 2px; }
+header {
+  position: sticky; top: 0; z-index: 40;
+  background: rgb(var(--bg) / .82);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  border-bottom: 1px solid rgb(var(--line));
+  height: 64px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px;
+}
+.logo { width: 38px; height: 38px; flex: none; display: block; }
+.logo svg { width: 100%; height: 100%; display: block; }
+.brand { font-family: var(--font-display); font-weight: 600; font-size: 16px; }
+.pill {
+  background: rgb(var(--accent) / .1);
+  border: 1px solid rgb(var(--accent) / .28);
+  color: rgb(var(--accent));
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.btn {
+  background: linear-gradient(180deg, rgb(var(--accent2)), rgb(var(--accent)));
+  color: rgb(var(--onaccent));
+  border: none;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 13px;
+  box-shadow: 0 1px 0 rgb(255 255 255 / .18) inset, 0 6px 16px -6px rgb(var(--accent) / .55);
+  transition: transform .15s ease, box-shadow .2s ease, filter .2s ease;
+}
+.btn:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.btn:active { transform: translateY(0) scale(.98); }
+.btn.secondary {
+  background: rgb(var(--surface));
+  color: rgb(var(--ink));
+  border: 1px solid rgb(var(--line));
+  box-shadow: var(--shadow);
+}
+.btn.secondary:hover { border-color: rgb(var(--accent) / .5); }
+.icon-btn {
+  width: 36px; height: 36px; flex: none; border-radius: 999px; display: grid; place-items: center;
+  background: rgb(var(--surface)); border: 1px solid rgb(var(--line)); color: rgb(var(--muted));
+  cursor: pointer; transition: color .2s, border-color .2s;
+}
+.icon-btn:hover { color: rgb(var(--accent)); border-color: rgb(var(--accent) / .5); }
+.icon-btn svg { width: 18px; height: 18px; }
+.swatch { width: 16px; height: 16px; border-radius: 50%; background: conic-gradient(from 135deg, #106256 0 50%, #2563eb 0 100%); box-shadow: 0 0 0 2px rgb(var(--surface)); }
+#loginForm > div span { display: inline-block; padding: 2px 6px; font-weight: 500; }
+.view { display: none; padding: 24px 20px 60px; max-width: 1100px; margin: 0 auto; }
+.view.active { display: block; animation: rise .35s ease both; }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.login-wrap {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  padding: 88px 16px 40px;
+  background:
+    radial-gradient(ellipse at 50% 12%, rgb(var(--accent) / .16), transparent 46%),
+    radial-gradient(ellipse at 90% 100%, rgb(var(--accent2) / .10), transparent 40%),
+    rgb(var(--bg));
+}
+.login-card {
+  background: rgb(var(--surface));
+  border: 1px solid rgb(var(--line));
+  border-radius: 24px;
+  padding: 32px 26px 26px;
+  width: 100%; max-width: 380px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+.login-card .mark { width: 76px; height: 76px; margin: 0 auto 14px; }
+.wordmark { margin-bottom: 18px; }
+.wm-main { display: block; font-family: var(--font-display); font-weight: 600; letter-spacing: -0.01em; color: rgb(var(--ink)); font-size: 24px; line-height: 1.1; }
+.wm-rule { width: 40px; height: 3px; border-radius: 3px; margin: 10px auto; background: linear-gradient(90deg, rgb(var(--accent2)), rgb(var(--accent))); }
+.wm-sub { display: block; font-family: var(--font-mono); letter-spacing: 0.28em; text-transform: uppercase; color: rgb(var(--accent)); font-size: 11px; font-weight: 500; }
+.brand-lock { line-height: 1.1; }
+.brand-lock .wm-main { font-size: 16px; }
+.brand-lock .wm-sub { font-size: 9px; letter-spacing: 0.3em; margin-top: 2px; }
+h1 { font-family: var(--font-display); font-size: 26px; font-weight: 600; margin-bottom: 6px; }
+h2 { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.01em; }
+.sub { color: rgb(var(--muted)); margin-bottom: 24px; font-size: 13px; }
+input, select, textarea {
+  width: 100%;
+  background: rgb(var(--raised));
+  border: 1px solid rgb(var(--line));
+  color: rgb(var(--ink));
+  padding: 12px 14px;
+  border-radius: 12px;
+  margin: 6px 0;
+  font-family: inherit;
+  font-size: 14px;
+  transition: border-color .2s, box-shadow .2s;
+}
+input::placeholder, textarea::placeholder { color: rgb(var(--muted) / .8); }
+input:focus, select:focus, textarea:focus { outline: none; border-color: rgb(var(--accent)); box-shadow: 0 0 0 3px rgb(var(--accent) / .18); }
+.card {
+  background: rgb(var(--surface));
+  border: 1px solid rgb(var(--line));
+  border-radius: 18px;
+  padding: 18px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow);
+}
+.card h3 { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; color: rgb(var(--muted)); margin-bottom: 10px; font-weight: 500; }
+.stat { font-family: var(--font-display); font-size: 32px; font-weight: 600; font-variant-numeric: tabular-nums; color: rgb(var(--accent)); line-height: 1.1; }
+.tabs { display: flex; gap: 4px; overflow-x: auto; margin-bottom: 16px; padding: 4px; background: rgb(var(--surface)); border: 1px solid rgb(var(--line)); border-radius: 999px; width: max-content; max-width: 100%; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { padding: 8px 14px; border-radius: 999px; font-size: 13px; font-weight: 500; color: rgb(var(--muted)); cursor: pointer; white-space: nowrap; transition: color .2s, background-color .2s; }
+.tab:hover { color: rgb(var(--ink)); }
+.tab.active { background: rgb(var(--accent)); color: rgb(var(--onaccent)); box-shadow: 0 4px 12px -4px rgb(var(--accent) / .6); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.item { background: rgb(var(--raised)); border: 1px solid rgb(var(--line)); border-radius: 12px; padding: 12px; margin: 6px 0; font-size: 13px; }
+.star-btn {
+  width: 180px; height: 180px; border-radius: 50%; border: 1px solid rgb(255 255 255 / .25);
+  background: radial-gradient(circle at 36% 28%, rgb(255 255 255 / .28), transparent 42%), linear-gradient(145deg, rgb(var(--accent2)), rgb(var(--accent)));
+  color: rgb(var(--onaccent));
+  font-family: var(--font-display); letter-spacing: 0.06em;
+  font-size: 22px; font-weight: 600; margin: 16px auto; cursor: pointer;
+  box-shadow: 0 0 0 10px rgb(var(--accent) / .08), 0 0 0 22px rgb(var(--accent) / .04), 0 22px 44px -12px rgb(var(--accent) / .55);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  transition: transform .2s ease, box-shadow .3s ease;
+}
+.star-btn:hover { transform: scale(1.03); }
+.star-btn:active { transform: scale(.97); }
+.star-btn.stop { background: linear-gradient(145deg, rgb(var(--raised)), rgb(var(--surface))); color: rgb(var(--ink)); border-color: rgb(var(--line)); box-shadow: var(--shadow); }
+.timer { font-family: var(--font-mono); font-size: 48px; font-weight: 500; font-variant-numeric: tabular-nums; margin: 8px 0; letter-spacing: -0.02em; }
+.modal { position: fixed; inset: 0; background: rgb(var(--bg) / .7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+.modal.active { display: flex; }
+.modal-box { background: rgb(var(--surface)); border: 1px solid rgb(var(--line)); border-radius: 22px; padding: 24px; max-width: 420px; width: 100%; max-height: 80vh; overflow: auto; box-shadow: var(--shadow); }
+.modal-box h3 { font-family: var(--font-display); font-size: 18px; font-weight: 600; }
+@media (max-width: 520px) {
+  header { padding: 0 12px; }
+  header .btn, header .pill { white-space: nowrap; padding: 7px 12px; }
+  header > div { gap: 8px !important; }
+  .brand-lock .wm-main { font-size: 14px; }
+  .icon-btn { width: 32px; height: 32px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<header>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span id="headerLogo" class="logo" role="img" aria-label="Screen Free Rewards"><svg viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="lgh" x1="6" y1="4" x2="42" y2="44" gradientUnits="userSpaceOnUse"><stop style="stop-color:rgb(var(--accent2))"/><stop offset="1" style="stop-color:rgb(var(--accent))"/></linearGradient></defs><rect width="48" height="48" rx="14" fill="url(#lgh)"/><circle cx="24" cy="24" r="12.5" fill="none" style="stroke:rgb(var(--onaccent))" stroke-width="2.6"/><path d="M24 14.5l2.6 6.4 6.9.5-5.3 4.4 1.7 6.7-5.9-3.7-5.9 3.7 1.7-6.7-5.3-4.4 6.9-.5z" style="fill:rgb(var(--onaccent))"/></svg></span>
+    <div class="brand-lock">
+      <span class="wm-main">Screen Free</span>
+      <span class="wm-sub">Rewards</span>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <button class="icon-btn" id="paletteBtn" type="button" aria-label="Switch colour palette" title="Teal / Blue"><span class="swatch"></span></button>
+    <button class="icon-btn" id="themeBtn" type="button" aria-label="Switch light or dark mode" title="Light / Dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path id="themeIcon" d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <div class="pill" id="pointsPill">0 pts</div>
+    <button class="btn secondary" id="logoutBtn" style="display:none;">Log out</button>
+  </div>
+</header>
+
+<div id="loginView" class="login-wrap">
+  <div class="login-card">
+    <span id="loginLogo" class="logo mark" role="img" aria-label="Screen Free Rewards"><svg viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="lgl" x1="6" y1="4" x2="42" y2="44" gradientUnits="userSpaceOnUse"><stop style="stop-color:rgb(var(--accent2))"/><stop offset="1" style="stop-color:rgb(var(--accent))"/></linearGradient></defs><rect width="48" height="48" rx="14" fill="url(#lgl)"/><circle cx="24" cy="24" r="12.5" fill="none" style="stroke:rgb(var(--onaccent))" stroke-width="2.6"/><path d="M24 14.5l2.6 6.4 6.9.5-5.3 4.4 1.7 6.7-5.9-3.7-5.9 3.7 1.7-6.7-5.3-4.4 6.9-.5z" style="fill:rgb(var(--onaccent))"/></svg></span>
+    <div class="wordmark">
+      <span class="wm-main">Screen Free</span>
+      <div class="wm-rule"></div>
+      <span class="wm-sub">Rewards</span>
+    </div>
+    <p class="sub">Sign in to start earning</p>
+    <div id="loginForm">
+      <input type="text" id="loginUser" placeholder="Name">
+      <input type="password" id="loginPass" placeholder="PIN">
+      <button class="btn" id="doLogin" style="width:100%;margin-top:8px;">Sign in</button>
+      <div style="margin-top:12px;font-size:13px;">
+        <span style="color:rgb(var(--accent));cursor:pointer;" id="showSignup">Create account</span>
+        · <span style="color:rgb(var(--accent));cursor:pointer;" id="showForgot">Forgot PIN</span>
+        · <span style="color:rgb(var(--accent));cursor:pointer;" id="showParentLogin">Parent sign in</span>
+      </div>
+    </div>
+    <div id="parentLoginForm" style="display:none;">
+      <p class="sub" style="margin-bottom:10px;">Opens parent controls only. The child timer stays locked.</p>
+      <input type="email" id="plEmail" placeholder="Parent email">
+      <input type="password" id="plPass" placeholder="Parent password">
+      <button class="btn" id="doParentLogin" style="width:100%;margin-top:8px;">Open parent controls</button>
+      <div style="margin-top:8px;font-size:13px;color:rgb(var(--accent));cursor:pointer;" id="backLogin3">Back</div>
+    </div>
+    <div id="signupForm" style="display:none;">
+      <input type="text" id="suName" placeholder="Child name">
+      <input type="number" id="suAge" placeholder="Age">
+      <input type="password" id="suPin" placeholder="Set PIN">
+      <button class="btn" id="doSignup" style="width:100%;margin-top:8px;">Create</button>
+      <div style="margin-top:8px;font-size:13px;color:rgb(var(--accent));cursor:pointer;" id="backLogin">Back</div>
+    </div>
+    <div id="forgotForm" style="display:none;">
+      <input type="password" id="forgotPin" placeholder="Parent PIN">
+      <button class="btn" id="doReset" style="width:100%;margin-top:8px;">Recover</button>
+      <div style="margin-top:8px;font-size:13px;color:rgb(var(--accent));cursor:pointer;" id="backLogin2">Back</div>
+    </div>
+  </div>
+</div>
+
+<div id="childView" class="view">
+  <div style="text-align:center;padding:20px 0;">
+    <div id="childName" style="font-family:var(--font-display);font-size:20px;font-weight:600;margin-bottom:8px;"></div>
+    <div class="timer" id="timer">00:00</div>
+    <div id="status" style="color:rgb(var(--muted));margin-bottom:12px;">Ready</div>
+    <button class="star-btn" id="toggleBtn">START</button>
+    <div style="margin-top:16px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+      <button class="btn" id="redeemBtn">Redeem points</button>
+      <button class="btn secondary" id="askBtn">Ask parents</button>
+      <button class="btn secondary" id="suggestBtn">Suggest reward</button>
+      <button class="btn secondary" id="toParent">Parent controls</button>
+    </div>
+    <div id="childTasks" style="margin-top:24px;text-align:left;"></div>
+  </div>
+</div>
+
+<div id="parentView" class="view">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <h2 style="font-family:var(--font-display);">Parent Controls</h2>
+    <button class="btn secondary" id="toChild">Back to child</button>
+  </div>
+  <div class="tabs">
+    <div class="tab active" data-t="overview">Overview</div>
+    <div class="tab" data-t="sched">Schedule</div>
+    <div class="tab" data-t="recon">Reconciliation</div>
+    <div class="tab" data-t="tasks">Tasks</div>
+    <div class="tab" data-t="sugg">Requests</div>
+    <div class="tab" data-t="rewards">Rewards</div>
+    <div class="tab" data-t="sibs">Siblings</div>
+    <div class="tab" data-t="profile">Profile</div><div class="tab" data-t="logs">Reports</div>
+  </div>
+  <div id="tab-overview" class="tab-content active">
+    <div class="card"><h3>Balances</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;">
+        <div><div class="stat" id="bal">0</div><div style="color:rgb(var(--muted));font-size:12px;">Balance</div></div>
+        <div><div class="stat" id="pend">0</div><div style="color:rgb(var(--muted));font-size:12px;">Pending</div></div>
+      </div>
+    </div>
+  </div>
+  <div id="tab-sched" class="tab-content">
+    <div class="card"><h3>Earning windows</h3>
+      <div id="schedList"></div>
+      <select id="schedDay"><option value="weekday">Weekdays</option><option value="weekend">Weekends</option><option value="all">All</option></select>
+      <input type="time" id="schedFrom" value="16:00"><input type="time" id="schedTo" value="22:00">
+      <button class="btn" id="addSched">Add window</button>
+    </div>
+  </div>
+  <div id="tab-recon" class="tab-content">
+    <div class="card"><h3>Time reconciliation</h3>
+      <div id="reconSummary"></div>
+    </div>
+    <div class="card"><h3>App usage log (manual)</h3>
+      <p style="font-size:12px;color:rgb(var(--muted));margin-bottom:8px;">Automatic tracking of other apps requires a native app with OS permissions. Log manually here.</p>
+      <div id="appLogList"></div>
+      <input id="appName" placeholder="App name"><input type="number" id="appMins" placeholder="Minutes">
+      <button class="btn" id="addApp">Log</button>
+    </div>
+  </div>
+  <div id="tab-tasks" class="tab-content"><div class="card"><h3>Tasks</h3><div id="tasksList"></div>
+    <input id="taskTitle" placeholder="Task"><input type="number" id="taskPts" placeholder="Points" value="50">
+    <button class="btn" id="addTask">Assign</button></div></div>
+  <div id="tab-sugg" class="tab-content"><div class="card"><h3>Requests from the child</h3>
+    <p style="font-size:12px;color:rgb(var(--muted));margin-bottom:8px;">Approve or decline. Approving a suggestion adds it to the reward list. Declining a redeem refunds the points. This list cannot be deleted.</p>
+    <div id="suggList"></div></div></div>
+  <div id="tab-rewards" class="tab-content"><div class="card"><h3>Reward options the child can redeem</h3>
+    <div id="rewardList"></div>
+    <input id="rewName" placeholder="Reward name">
+    <input id="rewCost" type="number" placeholder="Point cost" value="50">
+    <input id="rewDesc" placeholder="What they get">
+    <button class="btn" id="addReward">Add reward</button>
+  </div></div>
+  <div id="tab-sibs" class="tab-content"><div class="card"><h3>Siblings</h3><div id="sibsList"></div>
+    <input id="sibName" placeholder="Name"><input type="number" id="sibAge" placeholder="Age">
+    <button class="btn" id="addSib">Add</button></div></div>
+  
+  <div id="tab-profile" class="tab-content">
+    <div class="card">
+      <h3>Parent profile</h3>
+      <p style="font-size:12px;color:rgb(var(--muted));margin-bottom:8px;">Used for monitoring reports. Email delivery requires a backend service.</p>
+      <input id="pName" placeholder="Parent name">
+      <input id="pEmail" type="email" placeholder="Email">
+      <input id="pPhone" placeholder="Mobile">
+      <input id="pPass" type="password" placeholder="Parent password (default PIN 1234)">
+      <p style="font-size:12px;color:rgb(var(--muted));margin:8px 0;">The first request emails an Activate link from FormSubmit. Tap it once. After that, both parents get the request by email. Phone alerts work on this device after you allow them.</p>
+      <button class="btn secondary" id="enableNotes" type="button">Allow phone alerts</button>
+      <h3 style="margin-top:16px;">Second parent</h3>
+      <p style="font-size:12px;color:rgb(var(--muted));margin-bottom:8px;">Use this when both parents are at work. Every child request is filed for both, and a ready email opens to both addresses.</p>
+      <input id="pName2" placeholder="Second parent name">
+      <input id="pEmail2" type="email" placeholder="Second parent email">
+      <input id="pPhone2" placeholder="Second parent mobile">
+      <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:8px 0;"><input id="bothWorking" type="checkbox" style="width:auto;"> Both parents are at work</label>
+      <label style="font-size:12px;color:rgb(var(--muted));">Send log every</label>
+      <select id="emailInterval">
+        <option value="off">Off</option>
+        <option value="daily">Daily</option>
+        <option value="weekly">Weekly</option>
+      </select>
+      <button class="btn" id="saveProfile" style="margin-top:8px;">Save profile</button>
+    </div>
+    <div class="card">
+      <h3>Remote actions (requires native app)</h3>
+      <p style="font-size:12px;color:rgb(var(--muted));margin-bottom:8px;">These controls are prepared for a future native wrapper. A pure web app cannot lock the device or block other apps.</p>
+      <button class="btn secondary" id="lockDevice">Request device lock</button>
+      <button class="btn secondary" id="blockApps" style="margin-left:8px;">Request app block</button>
+      <div id="remoteStatus" style="margin-top:8px;font-size:12px;color:rgb(var(--muted));"></div>
+    </div>
+  </div>
+<div id="tab-logs" class="tab-content">
+    <div class="card"><button class="btn" id="dlLog">Activity PDF</button>
+    <button class="btn secondary" id="dlReport" style="margin-left:8px;">Points report PDF</button>
+    <div id="logPrev" style="font-size:12px;margin-top:12px;max-height:240px;overflow:auto;"></div></div>
+  </div>
+</div>
+
+<div id="pinModal" class="modal"><div class="modal-box">
+  <h3>Parent access</h3>
+  <p style="font-size:13px;color:rgb(var(--muted));margin:6px 0 12px;">Enter the parent PIN to open full controls. All actions are logged and cannot be deleted.</p>
+  <h3>Parent PIN</h3>
+  <input type="password" id="pinIn" placeholder="PIN">
+  <button class="btn" id="pinOk" style="width:100%;margin-top:8px;">Unlock</button>
+  <button class="btn secondary" id="pinCancel" style="width:100%;margin-top:6px;">Cancel</button>
+</div></div>
+
+<div id="redeemModal" class="modal"><div class="modal-box">
+  <h3>Redeem points</h3>
+  <p style="font-size:13px;color:rgb(var(--muted));margin:6px 0 12px;">These are the rewards your parents added. Choosing one holds the points and sends the request to both parents. They approve or decline.</p>
+  <div id="redeemList"></div>
+  <button class="btn secondary" id="closeRedeem" style="width:100%;margin-top:12px;">Close</button>
+</div></div>
+<div id="askModal" class="modal"><div class="modal-box">
+  <h3>Ask your parents</h3>
+  <p style="font-size:13px;color:rgb(var(--muted));margin:6px 0 12px;">Sent to both parents at once. If you tick the box, approving it also adds the item to your reward list.</p>
+  <input id="askTitle" placeholder="What do you need?">
+  <textarea id="askDesc" placeholder="Details" style="min-height:72px;"></textarea>
+  <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:8px 0;"><input id="askAsReward" type="checkbox" style="width:auto;"> Suggest this as a new reward</label>
+  <button class="btn" id="sendAsk" style="width:100%;margin-top:8px;">Send to both parents</button>
+  <button class="btn secondary" id="closeAsk" style="width:100%;margin-top:6px;">Cancel</button>
+</div></div>
+<div id="pointsModal" class="modal"><div class="modal-box">
+  <h3>Your points</h3>
+  <p style="font-size:13px;color:rgb(var(--muted));margin:6px 0 12px;">History of points earned from no-screen time. Redeem from the rewards your parents added, or send a new request.</p>
+  <h3>Points history</h3>
+  <div id="pointsHistory" style="font-size:13px;margin:12px 0;max-height:180px;overflow:auto;"></div>
+  <button class="btn" id="pointsToRedeem" style="width:100%;">Redeem points</button>
+  <button class="btn secondary" id="closePoints" style="width:100%;margin-top:6px;">Close</button>
+</div></div>
+
+<script>
+function newPdf(){ if(!window.jspdf){ alert('PDF tools could not load. Check the internet connection and try again.'); return null; } return new window.jspdf.jsPDF(); }
+let state = {users:[], active:null, pin:'1234', rate:1, schedules:[], log:[], loggedIn:false};
+function load(){ try{ const r=localStorage.getItem('sfr4'); if(r) Object.assign(state, JSON.parse(r)); }catch(e){} }
+function save(){ localStorage.setItem('sfr4', JSON.stringify(state)); }
+function logA(t,d,a='sys'){ state.log.unshift({ts:Date.now(),t,d,a}); if(state.log.length>400) state.log.pop(); save(); }
+function getU(){ return state.users.find(u=>u.id===state.active) || state.users[0]; }
+function isActiveNow(){
+  if(!state.schedules.length) return true;
+  const now=new Date(), day=now.getDay(), isWkd=day>=1&&day<=5;
+  const mins=now.getHours()*60+now.getMinutes();
+  return state.schedules.some(s=>{
+    if(s.day==='weekday'&&!isWkd) return false;
+    if(s.day==='weekend'&&isWkd) return false;
+    const [fh,fm]=s.from.split(':').map(Number), [th,tm]=s.to.split(':').map(Number);
+    const from=fh*60+fm, to=th*60+tm;
+    return from<=to ? (mins>=from && mins<to) : (mins>=from || mins<to);
+  });
+}
+function windowMinutes(w){
+  const [fh,fm]=w.from.split(':').map(Number), [th,tm]=w.to.split(':').map(Number);
+  let from=fh*60+fm, to=th*60+tm; if(to<=from) to+=1440; return to-from;
+}
+function getTodayWindows(){
+  const day=new Date().getDay(), isWkd=day>=1&&day<=5;
+  return state.schedules.filter(s=> (s.day==='weekday'?isWkd:s.day==='weekend'?!isWkd:true));
+}
+function updateUI(){
+  const u=getU(); if(!u) return;
+  document.getElementById('childName').textContent = u.name + (u.age?' • '+u.age:'');
+  const live = u.activeStart ? Math.floor((Date.now()-u.activeStart)/60000 * state.rate) : 0;
+  document.getElementById('pointsPill').textContent = Math.floor((u.balance||0)+(u.pending||0)+live) + ' pts';
+  const t=document.getElementById('timer'), btn=document.getElementById('toggleBtn'), st=document.getElementById('status');
+  if(u.activeStart){
+    const el=Date.now()-u.activeStart;
+    t.textContent = String(Math.floor(el/60000)).padStart(2,'0')+':'+String(Math.floor(el/1000)%60).padStart(2,'0');
+    st.textContent = isActiveNow()?'Earning':'Outside window';
+    btn.textContent='STOP'; btn.classList.add('stop');
+  } else {
+    t.textContent='00:00';
+    const sched=getTodayWindows().reduce((s,w)=>s+windowMinutes(w),0);
+    const today=new Date(); today.setHours(0,0,0,0);
+    const actual=(u.sessions||[]).filter(s=>s.start>=today.getTime()).reduce((s,x)=>s+Math.floor((x.end-x.start)/60000),0);
+    st.textContent = isActiveNow() ? 'Ready • '+(Math.max(0,sched-actual))+' min unused' : 'Outside earning hours';
+    btn.textContent='START'; btn.classList.remove('stop');
+  }
+  document.getElementById('childTasks').innerHTML = (u.tasks||[]).filter(x=>x.status!=='done').map(x=>`<div class="item">${x.title} (+${x.pts}) <button class="btn" style="padding:4px 10px;font-size:12px;" onclick="doneTask(${x.id})">Done</button></div>`).join('');
+}
+let intv;
+function startLoop(){ if(intv) clearInterval(intv); intv=setInterval(updateUI,1000); updateUI(); }
+function show(id){
+  document.querySelectorAll('.view,.login-wrap').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.login-wrap').forEach(v=>v.style.display='none');
+  const el=document.getElementById(id);
+  if(el){ el.classList.add('active'); if(id==='loginView') el.style.display='flex'; }
+  document.getElementById('logoutBtn').style.display = (id!=='loginView') ? 'inline-flex' : 'none';
+  document.getElementById('pointsPill').style.display = (id!=='loginView') ? '' : 'none';
+}
+
+document.getElementById('doLogin').onclick=()=>{
+  const name=document.getElementById('loginUser').value.trim(), pin=document.getElementById('loginPass').value;
+  let u=state.users.find(x=>x.name.toLowerCase()===name.toLowerCase() && x.pin===pin);
+  if(!u && pin===state.pin){ if(!state.users.length) state.users.push({id:Date.now(),name:name||'Child',age:8,pin,sessions:[],pending:0,balance:0,tasks:[],suggestions:[],rewards:[],appLog:[]}); u=state.users[0]; }
+  if(u){ state.active=u.id; state.loggedIn=true; save(); show('childView'); startLoop(); logA('login',u.name); }
+  else alert('Invalid');
+};
+document.getElementById('showSignup').onclick=()=>{document.getElementById('loginForm').style.display='none'; document.getElementById('signupForm').style.display='block';};
+document.getElementById('doSignup').onclick=()=>{
+  const name=document.getElementById('suName').value.trim(), age=parseInt(document.getElementById('suAge').value)||8, pin=document.getElementById('suPin').value;
+  if(!name||pin.length<4) return alert('Name + 4 digit PIN');
+  const id=Date.now();
+  state.users.push({id,name,age,pin,sessions:[],pending:0,balance:0,tasks:[],suggestions:[],rewards:[{id:1,name:'Reward',cost:100}],appLog:[]});
+  state.active=id; state.loggedIn=true; save(); show('childView'); startLoop();
+};
+document.getElementById('showForgot').onclick=()=>{document.getElementById('loginForm').style.display='none'; document.getElementById('forgotForm').style.display='block';};
+document.getElementById('doReset').onclick=()=>{ if(document.getElementById('forgotPin').value===state.pin) show('parentView'); else alert('Wrong PIN'); };
+document.getElementById('showParentLogin').onclick=()=>{ document.getElementById('loginForm').style.display='none'; document.getElementById('signupForm').style.display='none'; document.getElementById('forgotForm').style.display='none'; document.getElementById('parentLoginForm').style.display='block'; };
+document.getElementById('doParentLogin').onclick=()=>{
+  const email=document.getElementById('plEmail').value.trim();
+  const pass=document.getElementById('plPass').value;
+  const expected=(state.parent&&state.parent.password)||state.pin||'1234';
+  if(pass!==expected) return alert('Wrong parent password. Until you change it, use the PIN 1234.');
+  state.parent=state.parent||{};
+  if(email){ if(!state.parent.email) state.parent.email=email; else if(state.parent.email!==email && state.parent.email2!==email) state.parent.email2=email; }
+  state.loggedIn=true;
+  if(!state.active && state.users[0]) state.active=state.users[0].id;
+  save();
+  logA('parent_login', email||'parent', 'parent');
+  show('parentView');
+  renderParent();
+};
+['backLogin','backLogin2','backLogin3'].forEach(id=>document.getElementById(id).onclick=()=>{document.getElementById('signupForm').style.display='none'; document.getElementById('forgotForm').style.display='none'; document.getElementById('parentLoginForm').style.display='none'; document.getElementById('loginForm').style.display='block';});
+
+document.getElementById('toggleBtn').onclick=()=>{
+  const u=getU(); if(!u) return;
+  if(!isActiveNow() && !u.activeStart){ alert('Outside earning hours'); return; }
+  if(u.activeStart){
+    const pts=Math.floor((Date.now()-u.activeStart)/60000*state.rate);
+    if(pts>0){ u.pending=(u.pending||0)+pts; u.sessions=u.sessions||[]; u.sessions.unshift({id:Date.now(),start:u.activeStart,end:Date.now(),pts}); logA('session','+'+pts); }
+    u.activeStart=null;
+  } else u.activeStart=Date.now();
+  save(); updateUI();
+};
+document.getElementById('toParent').onclick=()=>document.getElementById('pinModal').classList.add('active');
+document.getElementById('pinOk').onclick=()=>{ if(document.getElementById('pinIn').value===state.pin){ document.getElementById('pinModal').classList.remove('active'); show('parentView'); renderParent(); } else alert('Wrong'); };
+document.getElementById('pinCancel').onclick=()=>document.getElementById('pinModal').classList.remove('active');
+document.getElementById('toChild').onclick=()=>show('childView');
+document.getElementById('logoutBtn').onclick=()=>{ state.loggedIn=false; state.active=null; save(); show('loginView'); };
+
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active'); document.getElementById('tab-'+t.dataset.t).classList.add('active');
+  if(t.dataset.t==='recon') renderRecon();
+});
+function renderParent(){
+  if(state.parent){
+    document.getElementById('pName').value = state.parent.name||'';
+    document.getElementById('pEmail').value = state.parent.email||'';
+    document.getElementById('pPhone').value = state.parent.phone||'';
+    document.getElementById('pName2').value = state.parent.name2||'';
+    document.getElementById('pEmail2').value = state.parent.email2||'';
+    document.getElementById('pPhone2').value = state.parent.phone2||'';
+    document.getElementById('bothWorking').checked = state.parent.bothWorking!==false;
+    document.getElementById('emailInterval').value = state.parent.interval||'off';
+  }
+  const u=getU(); if(!u) return;
+  document.getElementById('bal').textContent=Math.floor(u.balance||0);
+  document.getElementById('pend').textContent=Math.floor(u.pending||0);
+  document.getElementById('schedList').innerHTML=state.schedules.map((s,i)=>`<div class="item">${s.day} ${s.from}–${s.to} <span style="float:right;cursor:pointer;" onclick="state.schedules.splice(${i},1);save();renderParent();">×</span></div>`).join('')||'<div class="item">No windows set (always active)</div>';
+  document.getElementById('tasksList').innerHTML=(u.tasks||[]).map(t=>`<div class="item">${t.title} +${t.pts} (${t.status||'open'})</div>`).join('')||'None';
+  document.getElementById('suggList').innerHTML=(u.requests||[]).map(s=>{
+    const actions = s.status==='pending'
+      ? `<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">${s.kind==='suggest'?`<input id="cost-${s.id}" type="number" value="${s.cost||50}" style="width:90px;margin:0;">`:''}<button class="btn" style="padding:4px 8px;font-size:11px;" onclick="decideRequest(${s.id},true)">Approve</button><button class="btn secondary" style="padding:4px 8px;font-size:11px;" onclick="decideRequest(${s.id},false)">Decline</button></div>`
+      : `<div style="margin-top:4px;color:rgb(var(--accent));">${esc(s.status)}</div>`;
+    return `<div class="item"><b>${esc(s.kind)}</b> · ${esc(s.name)}${s.cost?` · ${s.cost} pts`:''}<div style="color:rgb(var(--muted));">${esc(s.desc||'')} · ${new Date(s.ts).toLocaleString()}</div>${actions}</div>`;
+  }).join('')||'<div class="item">No requests yet</div>';
+  document.getElementById('rewardList').innerHTML=(u.rewards||[]).map(r=>`<div class="item">${esc(r.name)} · ${r.cost} pts<div style="color:rgb(var(--muted));">${esc(r.desc||'')}</div><button class="btn secondary" style="padding:4px 8px;font-size:11px;margin-top:6px;" onclick="removeReward(${r.id})">Remove from list</button></div>`).join('')||'<div class="item">No rewards yet. Add one below.</div>';
+  document.getElementById('sibsList').innerHTML=state.users.map(us=>`<div class="item">${us.name} ${us.id===state.active?'•':''} <button class="btn" style="padding:4px 8px;font-size:11px;" onclick="state.active=${us.id};save();renderParent();updateUI();">Switch</button></div>`).join('');
+  document.getElementById('logPrev').innerHTML=state.log.slice(0,15).map(l=>new Date(l.ts).toLocaleString()+' '+l.t+': '+l.d).join('<br>');
+}
+function renderRecon(){
+  const u=getU(); if(!u) return;
+  const windows=getTodayWindows();
+  const scheduled=windows.reduce((s,w)=>s+windowMinutes(w),0);
+  const today=new Date(); today.setHours(0,0,0,0);
+  const actual=(u.sessions||[]).filter(s=>s.start>=today.getTime()).reduce((s,x)=>s+Math.floor((x.end-x.start)/60000),0);
+  document.getElementById('reconSummary').innerHTML=`<div>Scheduled today: <b>${scheduled} min</b></div><div>Actual timer: <b>${actual} min</b></div><div>Unused: <b>${Math.max(0,scheduled-actual)} min</b></div>`;
+  document.getElementById('appLogList').innerHTML=(u.appLog||[]).slice(0,15).map(a=>`<div class="item">${new Date(a.ts).toLocaleString()} — ${a.name} (${a.mins} min)</div>`).join('')||'<div class="item">None logged</div>';
+}
+function esc(s){ return String(s??'').replace(/[&<>"']/g, function(c){ return {'&':'\u0026amp;','<':'\u0026lt;','>':'\u0026gt;','"':'\u0026quot;',"'":'\u0026#39;'}[c]; }); }
+function parentContacts(){
+  const p = state.parent || {};
+  const both = p.bothWorking!==false;
+  const list = [];
+  if(p.name || p.email || p.phone) list.push({name:p.name||'Parent 1', email:p.email||'', phone:p.phone||''});
+  if(both && (p.name2 || p.email2 || p.phone2)) list.push({name:p.name2||'Parent 2', email:p.email2||'', phone:p.phone2||''});
+  return list;
+}
+async function notifyParents(subject, body){
+  const contacts = parentContacts();
+  const emails = contacts.map(c=>c.email).filter(Boolean);
+  logA('parent_alert', subject+' → '+(emails.join(', ')||'in-app only'), 'child');
+  if(window.Notification && Notification.permission==='granted'){
+    try { new Notification(subject, { body: body.slice(0, 180) }); } catch(e){}
+  }
+  const results = [];
+  for(const email of emails){
+    try {
+      const res = await fetch('https://formsubmit.co/ajax/'+encodeURIComponent(email), {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', Accept:'application/json' },
+        body: JSON.stringify({
+          _subject: subject,
+          _template: 'box',
+          _captcha: 'false',
+          _replyto: email,
+          name: 'Screen Free Rewards',
+          message: body
+        })
+      });
+      const data = await res.json().catch(()=>({}));
+      results.push(email+': '+(data.message||('HTTP '+res.status)));
+      logA('email', email+' '+(data.message||res.status), 'sys');
+    } catch(err){
+      results.push(email+': not sent');
+      logA('email_fail', email, 'sys');
+    }
+  }
+  return results;
+}
+function openRedeem(){
+  const u=getU(); if(!u) return;
+  const list=(u.rewards||[]);
+  document.getElementById('redeemList').innerHTML = list.length ? list.map(r=>`<div class="item">${esc(r.name)} · ${r.cost} pts<div style="color:rgb(var(--muted));">${esc(r.desc||'')}</div><button class="btn" style="margin-top:6px;padding:6px 12px;" onclick="reqRedeem(${r.id})">Use ${r.cost} pts</button></div>`).join('') : '<div class="item">Your parents have not added rewards yet. Use Ask parents to suggest one.</div>';
+  document.getElementById('redeemModal').classList.add('active');
+}
+function openAsk(asReward){
+  document.getElementById('askAsReward').checked = !!asReward;
+  document.getElementById('askModal').classList.add('active');
+}
+document.getElementById('addSched').onclick=()=>{ state.schedules.push({day:document.getElementById('schedDay').value,from:document.getElementById('schedFrom').value,to:document.getElementById('schedTo').value}); save(); renderParent(); };
+document.getElementById('addTask').onclick=()=>{ const u=getU(); const title=document.getElementById('taskTitle').value.trim(), pts=parseInt(document.getElementById('taskPts').value)||50; if(!title)return; u.tasks=u.tasks||[]; u.tasks.push({id:Date.now(),title,pts,status:'open'}); save(); renderParent(); updateUI(); };
+window.doneTask=id=>{ const u=getU(); const t=(u.tasks||[]).find(x=>x.id===id); if(!t)return; t.status='done'; u.balance=(u.balance||0)+t.pts; save(); updateUI(); renderParent(); };
+window.decideRequest=(id, ok)=>{
+  const u=getU(); if(!u) return;
+  const q=(u.requests||[]).find(x=>x.id===id);
+  if(!q || q.status!=='pending') return;
+  if(ok && q.kind==='suggest'){
+    const el=document.getElementById('cost-'+id);
+    q.cost=parseInt(el&&el.value)||q.cost||50;
+    u.rewards=u.rewards||[];
+    u.rewards.push({id:Date.now(), name:q.name, cost:q.cost, desc:q.desc||''});
+    logA('reward_added', q.name+' added at '+q.cost+' pts', 'parent');
+  }
+  if(!ok && q.kind==='redeem'){
+    u.balance=(u.balance||0)+q.cost;
+    logA('redeem_refund', q.name+' +'+q.cost, 'parent');
+  }
+  if(ok && q.kind==='redeem') logA('redeem_approved', q.name+' -'+q.cost, 'parent');
+  q.status = ok ? 'approved' : 'declined';
+  q.decidedAt = Date.now();
+  save(); renderParent(); updateUI();
+};
+window.removeReward=id=>{
+  const u=getU(); if(!u) return;
+  const r=(u.rewards||[]).find(x=>x.id===id);
+  u.rewards=(u.rewards||[]).filter(x=>x.id!==id);
+  logA('reward_removed', r?r.name:'reward', 'parent');
+  save(); renderParent();
+};
+document.getElementById('addReward').onclick=()=>{
+  const u=getU(); if(!u) return;
+  const name=document.getElementById('rewName').value.trim();
+  const cost=parseInt(document.getElementById('rewCost').value)||0;
+  const desc=document.getElementById('rewDesc').value.trim();
+  if(!name||cost<1) return alert('Add a name and a point cost.');
+  u.rewards=u.rewards||[];
+  u.rewards.push({id:Date.now(), name, cost, desc});
+  logA('reward_added', name+' '+cost, 'parent');
+  document.getElementById('rewName').value='';
+  document.getElementById('rewDesc').value='';
+  save(); renderParent();
+};
+document.getElementById('addSib').onclick=()=>{ const name=document.getElementById('sibName').value.trim(); if(!name)return; state.users.push({id:Date.now(),name,age:parseInt(document.getElementById('sibAge').value)||8,pin:'1234',sessions:[],pending:0,balance:0,tasks:[],suggestions:[],rewards:[],requests:[],appLog:[]}); save(); renderParent(); };
+document.getElementById('addApp').onclick=()=>{ const u=getU(); const name=document.getElementById('appName').value.trim(), mins=parseInt(document.getElementById('appMins').value); if(!name||!mins)return; u.appLog=u.appLog||[]; u.appLog.unshift({ts:Date.now(),name,mins}); save(); renderRecon(); };
+document.getElementById('redeemBtn').onclick=openRedeem;
+document.getElementById('pointsToRedeem').onclick=()=>{ document.getElementById('pointsModal').classList.remove('active'); openRedeem(); };
+document.getElementById('closeRedeem').onclick=()=>document.getElementById('redeemModal').classList.remove('active');
+document.getElementById('askBtn').onclick=()=>openAsk(false);
+document.getElementById('suggestBtn').onclick=()=>openAsk(true);
+document.getElementById('closeAsk').onclick=()=>document.getElementById('askModal').classList.remove('active');
+document.getElementById('sendAsk').onclick=()=>{
+  const u=getU(); if(!u) return;
+  const name=document.getElementById('askTitle').value.trim();
+  const desc=document.getElementById('askDesc').value.trim();
+  if(!name) return alert('Say what you need.');
+  const asReward=document.getElementById('askAsReward').checked;
+  u.requests=u.requests||[];
+  u.requests.unshift({id:Date.now(), kind: asReward?'suggest':'ask', name, desc, cost: asReward?50:0, status:'pending', ts:Date.now()});
+  save();
+  document.getElementById('askTitle').value='';
+  document.getElementById('askDesc').value='';
+  document.getElementById('askModal').classList.remove('active');
+  notifyParents((asReward?'Reward suggestion':'Request')+' from '+u.name, u.name+' asks: '+name+(desc?'\n'+desc:'')+'\n\nOpen Screen Free Rewards, sign in as a parent, and approve or decline under Requests.').then(sent=>{
+    alert('Request is in Parent controls.'+(sent.length?'\n'+sent.join('\n'):'\nAdd both parent emails under Profile so it can be emailed. The first time, open the Activate email from FormSubmit.'));
+  });
+};
+document.getElementById('pointsPill').onclick=()=>{
+  const u=getU(); if(!u) return;
+  document.getElementById('pointsHistory').innerHTML=(u.sessions||[]).slice(0,12).map(s=>new Date(s.start).toLocaleString()+' +'+s.pts).join('<br>')||'No sessions yet';
+  document.getElementById('pointsModal').classList.add('active');
+};
+document.getElementById('closePoints').onclick=()=>document.getElementById('pointsModal').classList.remove('active');
+function takePoints(u, cost){
+  if(u.activeStart){
+    const earned=Math.floor((Date.now()-u.activeStart)/60000*state.rate);
+    if(earned>0) u.pending=(u.pending||0)+earned;
+    u.activeStart=Date.now();
+  }
+  const have=Math.floor((u.balance||0)+(u.pending||0));
+  if(have<cost) return false;
+  let left=cost;
+  const fromBal=Math.min(Math.floor(u.balance||0), left);
+  u.balance=(u.balance||0)-fromBal;
+  left-=fromBal;
+  u.pending=(u.pending||0)-left;
+  return true;
+}
+window.reqRedeem=(id)=>{
+  const u=getU(); if(!u) return;
+  const r=(u.rewards||[]).find(x=>x.id===id);
+  if(!r) return;
+  if(!takePoints(u, r.cost)) return alert('Not enough points.');
+  u.requests=u.requests||[];
+  u.requests.unshift({id:Date.now(), kind:'redeem', name:r.name, desc:r.desc||'', cost:r.cost, rewardId:r.id, status:'pending', ts:Date.now()});
+  notifyParents('Redeem request from '+u.name, u.name+' wants to redeem '+r.name+' for '+r.cost+' points.\n\nSign in as a parent and approve or decline under Requests. Declining refunds the points.').then(sent=>{
+    alert('Points are held until a parent decides.'+(sent.length?'\n'+sent.join('\n'):'\nAdd both parent emails under Profile so this is emailed.'));
+  });
+  save(); updateUI();
+  document.getElementById('redeemModal').classList.remove('active');
+};
+document.getElementById('dlLog').onclick=()=>{ const d=newPdf(); if(!d) return; d.text('Activity',14,20); let y=30; state.log.forEach(l=>{if(y>270){d.addPage();y=20;} d.text(new Date(l.ts).toLocaleString()+' '+l.t+': '+l.d,14,y); y+=6;}); d.save('log.pdf'); };
+document.getElementById('dlReport').onclick=()=>{ const d=newPdf(); if(!d) return; d.text('Points Report',14,20); const u=getU(); d.text('Balance '+(u.balance||0)+' Pending '+(u.pending||0),14,30); d.save('report.pdf'); };
+
+// Enter key
+['loginPass','suPin','forgotPin','pinIn'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('keypress',e=>{ if(e.key==='Enter') el.nextElementSibling?.click?.() || document.getElementById(id.replace('Pass','')+'Login'||'doLogin')?.click(); }); });
+
+
+document.getElementById('saveProfile').onclick = () => {
+  state.parent = state.parent || {};
+  state.parent.name = document.getElementById('pName').value.trim();
+  state.parent.email = document.getElementById('pEmail').value.trim();
+  state.parent.phone = document.getElementById('pPhone').value.trim();
+  state.parent.name2 = document.getElementById('pName2').value.trim();
+  state.parent.email2 = document.getElementById('pEmail2').value.trim();
+  state.parent.phone2 = document.getElementById('pPhone2').value.trim();
+  state.parent.bothWorking = document.getElementById('bothWorking').checked;
+  state.parent.interval = document.getElementById('emailInterval').value;
+  const pass = document.getElementById('pPass').value;
+  if(pass) state.parent.password = pass;
+  save();
+  logA('profile_update', 'Parent profile saved', 'parent');
+  alert('Profile saved. The first request to a new email sends an Activate link. Tap that once, then later requests arrive on their own.');
+};
+document.getElementById('enableNotes').onclick = async () => {
+  if(!window.Notification) return alert('This browser cannot show alerts.');
+  const p = await Notification.requestPermission();
+  alert(p==='granted' ? 'Alerts are on for this phone or tablet.' : 'Alerts stayed off. Allow notifications for this site in the browser settings.');
+};
+document.getElementById('lockDevice').onclick = () => {
+  logA('remote_lock', 'Device lock requested', 'parent');
+  document.getElementById('remoteStatus').textContent = 'Lock request logged. Native app required to enforce.';
+};
+document.getElementById('blockApps').onclick = () => {
+  logA('remote_block', 'App block requested', 'parent');
+  document.getElementById('remoteStatus').textContent = 'Block request logged. Native app required to enforce.';
+};
+load();
+if(!state.users.length){
+  const id=1;
+  state.users.push({id,name:'Ava',age:9,pin:'1234',sessions:[{id:2,start:Date.now()-5400000,end:Date.now()-3600000,pts:30}],pending:12,balance:86,tasks:[{id:3,title:'Read a book this week',pts:50,status:'open'}],suggestions:[],requests:[],rewards:[{id:11,name:'Movie night',cost:40,desc:'Pick the film'},{id:12,name:'Family outing',cost:100,desc:'You choose the place'}],appLog:[]});
+  state.active=id;
+  state.loggedIn=true;
+  state.parent={name:'',email:'',phone:'',name2:'',email2:'',phone2:'',bothWorking:true,interval:'off'};
+  state.schedules=[{day:'weekday',from:'16:00',to:'21:00'}];
+  save();
+}
+if(state.loggedIn && state.active){ show('childView'); startLoop(); } else show('loginView');
+
+// Delight theme: light/dark and teal/blue, remembered on this device
+(function(){
+  var d=document.documentElement;
+  function save(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+  function sync(){var dark=d.getAttribute('data-theme')==='dark';
+    document.getElementById('themeIcon').setAttribute('d',dark?'M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M3 12h2M19 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z':'M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z');}
+  document.getElementById('themeBtn').addEventListener('click',function(){var n=d.getAttribute('data-theme')==='dark'?'light':'dark';d.setAttribute('data-theme',n);save('sfr-theme',n);sync();});
+  document.getElementById('paletteBtn').addEventListener('click',function(){var n=d.getAttribute('data-palette')==='blue'?'teal':'blue';d.setAttribute('data-palette',n);save('sfr-palette',n);});
+  sync();
+})();
+</script>
+</body>
+</html>
