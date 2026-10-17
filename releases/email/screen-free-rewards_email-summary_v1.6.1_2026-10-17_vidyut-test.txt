@@ -17,4 +17,4 @@ OPEN REQUESTS (0)
 None.
 
 Open Screen Free Rewards, sign in as a parent, then approve points and requests.
-Screen Free Rewards v1.6.0
+Screen Free Rewards v1.6.1

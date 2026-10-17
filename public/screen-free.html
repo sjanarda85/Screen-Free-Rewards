@@ -496,7 +496,7 @@ body.is-locked { overflow: hidden; }
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
 function newPdf(){ if(!window.jspdf){ alert('PDF tools could not load. Check the internet connection and try again.'); return null; } return new window.jspdf.jsPDF(); }
-const APP_VERSION='1.6.0';
+const APP_VERSION='1.6.1';
 const SIGNUP_BONUS=50;
 function giveBonus(u,pts,why){ u.balance=(u.balance||0)+pts; (u.bonuses=u.bonuses||[]).push({ts:Date.now(),pts,why}); logA('bonus',u.name+' +'+pts+' pts, '+why,'sys'); }
 let state = {users:[], active:null, pin:'1234', rate:1, schedules:[], log:[], loggedIn:false};
@@ -711,7 +711,14 @@ function summaryText(u){
   L.push('','Open Screen Free Rewards, sign in as a parent, then approve points and requests.','Screen Free Rewards v'+APP_VERSION);
   return L.join('\n');
 }
-function summaryHTML(u,opts){
+// Gmail and other clients drop style backgrounds, which leaves light text on white. Repeat every dark
+// background as a bgcolor attribute and a gradient image, and declare the message dark.
+function darkProof(html){
+  html=html.replace(/<(table|td|div)\b([^>]*?)style="([^"]*?)background:(#[0-9a-fA-F]{6});([^"]*)"([^>]*)>/g,(m,t,a,pre,c,post,rest)=>'<'+t+a+(/bgcolor=/.test(a+rest)?'':' bgcolor="'+c+'"')+' style="'+pre+'background:'+c+';background-image:linear-gradient('+c+','+c+');'+post+'"'+rest+'>');
+  return html.replace('<!doctype html><html><body style="','<!doctype html><html style="background:#161719;color-scheme:dark;"><head><meta charset="utf-8"><meta name="color-scheme" content="dark"><meta name="supported-color-schemes" content="dark"></head><body bgcolor="#161719" style="');
+}
+function summaryHTML(u,opts){ return darkProof(summaryHTMLraw(u,opts)); }
+function summaryHTMLraw(u,opts){
   opts=opts||{}; const d=summaryData(u);
   const F='font-family:Helvetica,Arial,sans-serif;';
   const sec=t=>`<tr><td style="padding:18px 0 0 0;"><span style="display:inline-block;background:#2b2d31;color:#d9cfb8;${F}font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:8px 14px;border-radius:2px;">${t}</span></td></tr>`;
@@ -881,7 +888,8 @@ async function notifyParents(subject, body){
 }
 
 // Short notification email in the same layout as the daily summary
-function eventHTML(u,o){
+function eventHTML(u,o){ return darkProof(eventHTMLraw(u,o)); }
+function eventHTMLraw(u,o){
   const F='font-family:Helvetica,Arial,sans-serif;', date=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
   const row=(l,v,c)=>`<tr><td style="padding:9px 0;border-bottom:1px solid #2b2d31;${F}font-size:14px;color:#9c9da0;">${esc(l)}</td><td align="right" style="padding:9px 0;border-bottom:1px solid #2b2d31;${F}font-size:14px;font-weight:700;color:${c||'#eeece7'};">${esc(v)}</td></tr>`;
   return `<!doctype html><html><body style="margin:0;padding:0;background:#161719;"><table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#161719;"><tr><td align="center" style="padding:24px 12px;"><table width="560" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:560px;background:#1b1d20;border-radius:4px;"><tr><td style="padding:26px 26px 8px 26px;"><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td width="56" valign="middle"><table cellpadding="0" cellspacing="0" border="0"><tr><td width="44" height="44" align="center" valign="middle" style="width:44px;height:44px;background:#e9e2d0;border-radius:12px;font-family:Helvetica,Arial,sans-serif;font-size:22px;color:#1c1c1a;line-height:44px;">&#10022;</td></tr></table></td><td valign="middle"><div style="${F}font-size:17px;font-weight:700;color:#eeece7;">Screen Free Rewards</div><div style="${F}font-size:12px;color:#9c9da0;margin-top:3px;">${esc(o.title)}</div></td><td align="right" valign="middle"><div style="${F}font-size:15px;font-weight:700;color:#eeece7;">${date}</div><div style="${F}font-size:12px;color:#9c9da0;margin-top:3px;">${esc(u.name)}</div></td></tr></table></td></tr><tr><td style="padding:0 26px;"><div style="height:3px;background:#d9cfb8;line-height:3px;font-size:0;">&nbsp;</div></td></tr><tr><td style="padding:16px 26px 8px 26px;"><span style="display:inline-block;background:#2b2d31;color:#d9cfb8;${F}font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:8px 14px;border-radius:2px;">${esc(o.title)}</span></td></tr><tr><td style="padding:0 26px 22px 26px;"><table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#202226;"><tr><td style="padding:4px 18px 8px 18px;"><table width="100%" cellpadding="0" cellspacing="0" border="0">${o.rows.map(r=>row(r[0],r[1],r[2])).join('')}</table></td></tr></table></td></tr><tr><td style="padding:0 26px 24px 26px;"><div style="border-top:1px solid #2b2d31;padding-top:14px;${F}font-size:12px;color:#9c9da0;line-height:1.6;">Open the app, sign in as a parent, then approve points under Overview and decide requests under Requests.<br>Screen Free Rewards &middot; v${APP_VERSION}</div></td></tr></table></td></tr></table></body></html>`;
