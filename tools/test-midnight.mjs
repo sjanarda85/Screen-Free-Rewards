@@ -14,7 +14,7 @@ const snap=(date,uid='11',over={})=>({uid,date,name:'Vidyut',age:9,balance:80,pe
   R.sent.length=0;
   // 20:00Z is 01:30 on the 18th in Kolkata, so the 17th report is due
   ok(R.env.midnightSummaries()===1 && R.sent.length===1,'report sent for the day that just ended in the family time zone');
-  const m=R.sent[0]; ok(m.to==='p1@example.com' && /daily summary: Vidyut, 2026-10-17/.test(m.subject),'subject names child and day'); ok(/bgcolor="#eaf0fb"/.test(m.htmlBody) && /light only/.test(m.htmlBody) && /cid:logo/.test(m.htmlBody),'light blue and grey html with bgcolor and logo'); ok(m.inlineImages && m.inlineImages.logo && m.inlineImages.logo.mime==='image/png','logo is attached inline');
+  const m=R.sent[0]; ok(m.to==='p1@example.com' && /daily summary: Vidyut, 2026-10-17/.test(m.subject),'subject names child and day'); ok(/bgcolor="#eaf0fb"/.test(m.htmlBody) && /light only/.test(m.htmlBody) && /border-radius:50%/.test(m.htmlBody) && !/<img/.test(m.htmlBody),'light blue and grey html with bgcolor and a logo drawn in HTML (no image to block)');
   ok(/Read &lt;b&gt;/.test(m.htmlBody) && !/Read <b>/.test(m.htmlBody),'child text is escaped'); ok(m.attachments&&m.attachments.length===1 && /\.pdf$/.test(m.attachments[0].name),'PDF attached'); ok(/Earned that day: 50/.test(m.body),'text body has numbers');
   ok(R.env.midnightSummaries()===0 && R.sent.length===1,'never sent twice for the same day');
   ok(R.handle({action:'daily-claim',...A,key:'2026-10-17:11'}).claimed===false,'app cannot claim a day the relay already sent');
@@ -47,12 +47,5 @@ const snap=(date,uid='11',over={})=>({uid,date,name:'Vidyut',age:9,balance:80,pe
   const size=R.props.get('room:'+A.roomId).length; ok(size<8500,'room size '+size);
   ok(R.handle({action:'unpair',...A}).ok && !R.props.has('sent:'+A.roomId) && !R.props.has('room:'+A.roomId),'unpair removes room and sent record');
 }
-{ // logo on ordinary emails: only a real small PNG is accepted
-  const R=makeRelay(); R.handle({action:'verify',email:'q@example.com'}); const tok=R.handle({action:'confirm',email:'q@example.com',code:R.codeFor('q@example.com')}).token;
-  const png=Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),Buffer.alloc(40)]).toString('base64');
-  R.sent.length=0; ok(R.handle({to:'q@example.com',subject:'s',message:'m',htmlBody:'<img src="cid:logo">',logoBase64:png,token:tok}).ok && R.sent[0].inlineImages && R.sent[0].inlineImages.logo.name==='logo.png','valid PNG logo is attached');
-  R.sent.length=0; R.handle({to:'q@example.com',subject:'s',message:'m',htmlBody:'x',logoBase64:Buffer.from('<script>alert(1)</script>').toString('base64'),token:tok}); ok(!R.sent[0].inlineImages,'non-PNG data is ignored, mail still sends');
-  R.sent.length=0; R.handle({to:'q@example.com',subject:'s',message:'m',htmlBody:'x',logoBase64:Buffer.alloc(30000,1).toString('base64'),token:tok}); ok(!R.sent[0].inlineImages,'oversize logo ignored');
-  R.sent.length=0; R.handle({to:'q@example.com',subject:'s',message:'m',logoBase64:png,token:tok}); ok(!R.sent[0].inlineImages,'no logo without an html body');
-}
+
 console.log(`midnight tests passed ${pass}, failed ${fail}`); process.exit(fail?1:0);

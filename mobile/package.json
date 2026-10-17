@@ -1,6 +1,6 @@
 {
   "name": "screen-free-rewards-mobile",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "private": true,
   "description": "Android and iOS wrapper (Capacitor) for Screen Free Rewards",
   "scripts": {

@@ -3,9 +3,10 @@ Child: Vidyut (9)
 Date: 17 Oct 2026
 
 POINTS
-Balance: 50 pts
+Balance: 50 pts (₹50)
+1 point = ₹1
 Pending approval: 0 pts
-Earned today: 50 pts
+Earned today: 50 pts (₹50)
 Redeemed today: 0 pts
 
 SCREEN-FREE TIME
@@ -17,4 +18,4 @@ OPEN REQUESTS (0)
 None.
 
 Open Screen Free Rewards, sign in as a parent, then approve points and requests.
-Screen Free Rewards v1.8.0
+Screen Free Rewards v1.9.0

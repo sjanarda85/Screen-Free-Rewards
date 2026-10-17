@@ -42,7 +42,7 @@ const pdf=Buffer.from('%PDF-1.4\nhello\n%%EOF').toString('base64');
 { const {post,sent}=makeEnv(); post({action:'verify',email:'p@example.com'}); const code=sent[0].subject.match(/(\d{6})$/)[1]; const tok=post({action:'confirm',email:'p@example.com',code}).token; sent.length=0;
   let n=0; for(let i=0;i<45;i++){ if(post({to:'p@example.com',subject:'s',message:'m',token:tok}).ok) n++; } ok(n===40,'per-address cap 40, got '+n);
   const g=makeEnv(); let total=0; for(let i=0;i<100;i++){ const em='u'+i+'@example.com'; const r=g.post({action:'verify',email:em}); if(r.ok) total++; } ok(total===90,'global cap 90 incl codes, got '+total);
-  ok(JSON.parse(makeEnv().env.doGet().t).version===4,'doGet'); }
+  ok(JSON.parse(makeEnv().env.doGet().t).version===5,'doGet'); }
 // ---- pairing, sync and remote controls
 { const {post,advance,props}=makeEnv();
   const room=post({action:'pair-start',childName:'Mira'}); ok(room.ok && room.roomId.length===10 && /^[0-9a-f]{32}$/.test(room.secret) && /^[A-HJKMNP-Z2-9]{4}-[A-HJKMNP-Z2-9]{4}$/.test(room.code),'pair-start returns room, secret and a clean code');

@@ -1,5 +1,5 @@
 /**
- * Screen Free Rewards shared relay (Google Apps Script web app), version 4: email, device pairing, remote controls and the midnight daily summary.
+ * Screen Free Rewards shared relay (Google Apps Script web app), version 5: email, device pairing, remote controls, the midnight daily summary and live approvals from a parent phone.
  *
  * One relay serves every family that uses the app. It is built so it cannot be used to spam:
  *  - A parent must verify their own email once with a 6-digit code. Only verified addresses can receive mail.
@@ -19,6 +19,7 @@
  *   { action: 'sync-pull', roomId, secret }                       parent phone reads usage, controls and last seen
  *   { action: 'ctrl-set', roomId, secret, controls }              parent sets deviceLocked, message, lockedApps
  *   { action: 'unpair', roomId, secret }                          deletes the room
+ *   { action: 'cmd-add', roomId, secret, cmd }                    parent phone queues an approval (approve-points or decide); the child's next sync delivers it
  *   { action: 'daily-claim' | 'daily-release', roomId, secret, key }   whoever claims 'YYYY-MM-DD:childId' first sends that day's report
  *
  * Midnight summary while the app is closed: the child app keeps a small copy of each child's numbers in the room (sync).
@@ -33,7 +34,6 @@ var MAX_CODES_PER_ADDRESS_PER_DAY = 4;
 var MAX_EMAILS_PER_DAY = 90;          // all families together; free Google accounts allow about 100 a day
 var MAX_ATTACHMENT_BASE64 = 200000;   // about 150 KB of PDF
 var MAX_HTML = 60000;
-var MAX_LOGO_BASE64 = 20000;        // the small PNG logo shown at the top of the email
 var MAX_TEXT = 8000;
 var PAIR_TTL = 900;                   // pairing codes last 15 minutes
 var MAX_NEW_ROOMS_PER_DAY = 60;
@@ -53,6 +53,7 @@ function doPost(e) {
     if (action === 'sync') return out(sync_(d));
     if (action === 'sync-pull') return out(syncPull_(d));
     if (action === 'ctrl-set') return out(ctrlSet_(d));
+    if (action === 'cmd-add') return out(cmdAdd_(d));
     if (action === 'daily-claim') return out(dailyClaim_(d, true));
     if (action === 'daily-release') return out(dailyClaim_(d, false));
     if (action === 'unpair') return out(unpair_(d));
@@ -63,7 +64,7 @@ function doPost(e) {
 }
 
 function doGet() {
-  return out({ ok: true, service: APP_NAME + ' relay', version: 4 });
+  return out({ ok: true, service: APP_NAME + ' relay', version: 5 });
 }
 
 // ---- verification --------------------------------------------------------------------------------------------
@@ -125,8 +126,6 @@ function send_(d) {
     var name = String(d.attachmentName || 'summary.pdf').replace(/[^A-Za-z0-9._-]/g, '_').slice(0, 80);
     mail.attachments = [Utilities.newBlob(bytes, 'application/pdf', name)];
   }
-  var logo = logoBlob_(d.logoBase64);
-  if (logo && d.htmlBody) mail.inlineImages = { logo: logo };
   MailApp.sendEmail(mail);
   return { ok: true };
 }
@@ -141,7 +140,8 @@ function cleanSnap_(s) {
     date: String(s.date), uid: String(s.uid), name: clip_(s.name || 'Child', 40), age: n(s.age),
     balance: n(s.balance), pending: n(s.pending), earned: n(s.earned), mins: n(s.mins), scheduled: n(s.scheduled),
     tasks: (s.tasks || []).slice(0, 5).map(function (x) { return { t: clip_(x.t, 40), p: n(x.p) }; }),
-    open: (s.open || []).slice(0, 4).map(function (x) { return { k: clip_(x.k, 12), n: clip_(x.n, 40), c: n(x.c) }; })
+    open: (s.open || []).slice(0, 4).map(function (x) { return { i: clip_(String(x.i || ''), 20), k: clip_(x.k, 12), n: clip_(x.n, 40), c: n(x.c), kc: clip_(x.kc || '', 20) }; }),
+    val: Math.round((Number(s.val) || 0) * 100) / 100, rate: Math.round((Number(s.rate) || 0) * 100) / 100
   };
 }
 
@@ -212,22 +212,6 @@ function esc_(s) {
 }
 
 // Dark report in the same layout as the app's email. Every dark panel also carries a bgcolor so Gmail keeps it.
-// Accepts only a small real PNG (checked by its first bytes) so the logo cannot be used to send anything else.
-function logoBlob_(b64) {
-  if (!b64) return null;
-  b64 = String(b64).replace(/^data:[^,]*,/, '');
-  if (b64.length > MAX_LOGO_BASE64) return null;
-  try {
-    var bytes = Utilities.base64Decode(b64);
-    if (bytes.length < 8 || (bytes[0] & 255) !== 137 || bytes[1] !== 80 || bytes[2] !== 78 || bytes[3] !== 71) return null;
-    return Utilities.newBlob(bytes, 'image/png', 'logo.png');
-  } catch (err) {
-    return null;
-  }
-}
-
-var LOGO_PNG = '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';
-
 function dailyHtml_(s, day, note) {
   var F = 'font-family:Helvetica,Arial,sans-serif;';
   var C = { page: '#eaf0fb', card: '#ffffff', band: '#2563eb', band2: '#1d4ed8', bar: '#60a5fa', tile: '#f3f7ff', tl: '#dbe7ff', ink: '#0f172a', mut: '#64748b', line: '#e5eaf3', blue: '#1d4ed8', chip: '#e0ebff', box: '#f6f8fc', pos: '#059669', warn: '#b45309', foot: '#f1f5fb' };
@@ -241,9 +225,9 @@ function dailyHtml_(s, day, note) {
   var open = s.open.length ? s.open.map(function (x) { return '&bull; <b>' + esc_(x.k) + '</b>: ' + esc_(x.n) + (x.c ? ' (' + x.c + ' pts)' : ''); }).join('<br>') : 'None.';
   var comment = esc_(s.name) + ' spent ' + s.mins + ' min screen free and earned ' + s.earned + ' points.' + (s.pending ? ' ' + s.pending + ' points are waiting for your approval.' : '');
   var band = 'background:' + C.band + ';background-image:linear-gradient(135deg,' + C.band2 + ',' + C.band + ' 60%,#3b82f6);';
-  var body = '<tr><td style="padding:18px 0 0 0;"><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>' + tile('Balance', s.balance, 'points', C.blue) + tile('Earned that day', '+' + s.earned, 'points', C.pos) + '</tr><tr>' + tile('Pending', s.pending, 'awaiting approval', s.pending ? C.warn : C.ink) + tile('Screen free', s.mins, 'of ' + s.scheduled + ' min', C.ink) + '</tr></table></td></tr>' +
+  var body = '<tr><td style="padding:18px 0 0 0;"><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>' + tile('Balance', s.balance, 'pts' + (s.val ? ' &middot; &#8377;' + s.val : ''), C.blue) + tile('Earned that day', '+' + s.earned, 'points', C.pos) + '</tr><tr>' + tile('Pending', s.pending, 'awaiting approval', s.pending ? C.warn : C.ink) + tile('Screen free', s.mins, 'of ' + s.scheduled + ' min', C.ink) + '</tr></table></td></tr>' +
     sec('Child') + box(row('Name', esc_(s.name)) + row('Age', s.age ? String(s.age) : '-') + row('Status', status, s.open.length ? C.warn : C.pos, true)) +
-    sec('Points') + box(row('Balance', s.balance + ' pts', C.blue, true) + row('Pending approval', s.pending + ' pts', s.pending ? C.warn : null) + row('Earned that day', '+' + s.earned + ' pts', C.pos)) +
+    sec('Points') + box(row('Balance', s.balance + ' pts' + (s.val ? ' &middot; &#8377;' + s.val : ''), C.blue, true) + (s.rate ? row('Point value', '1 point = &#8377;' + s.rate) : '') + row('Pending approval', s.pending + ' pts', s.pending ? C.warn : null) + row('Earned that day', '+' + s.earned + ' pts', C.pos)) +
     sec('Screen-free time') + box(row('Scheduled', s.scheduled + ' min') + row('Actual timer', s.mins + ' min', C.blue, true) + row('Unused', unused + ' min')) +
     sec('Open requests (' + s.open.length + ')') + text(open) + sec('Open tasks (' + s.tasks.length + ')') + text(tasks) +
     sec('Commentary') + text(comment + (note ? '<br><span style="color:' + C.mut + ';">' + esc_(note) + '</span>' : ''));
@@ -251,7 +235,7 @@ function dailyHtml_(s, day, note) {
     '<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="' + C.page + '" style="background:' + C.page + ';"><tr><td align="center" style="padding:28px 12px;">' +
     '<table width="640" cellpadding="0" cellspacing="0" border="0" bgcolor="' + C.card + '" style="width:100%;max-width:640px;background:' + C.card + ';border-radius:14px;border:1px solid ' + C.tl + ';">' +
     '<tr><td bgcolor="' + C.band + '" style="' + band + 'padding:26px 28px;border-radius:14px 14px 0 0;"><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>' +
-    '<td width="68" valign="middle"><img src="cid:logo" width="56" height="56" alt="&#10022;" style="display:block;border:0;border-radius:14px;width:56px;height:56px;"></td>' +
+    '<td width="68" valign="middle"><table cellpadding="0" cellspacing="0" border="0" width="56" height="56" bgcolor="#ffffff" style="width:56px;height:56px;background:#ffffff;border-radius:14px;"><tr><td align="center" valign="middle" style="height:56px;"><div style="width:22px;height:22px;border:4px solid ' + C.blue + ';border-radius:50%;text-align:center;line-height:22px;font-size:14px;color:#f59e0b;margin:0 auto;">&#10022;</div><div style="font-size:0;line-height:0;margin-top:-1px;"><span style="display:inline-block;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:10px solid ' + C.blue + ';margin:0 1px;"></span><span style="display:inline-block;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:10px solid ' + C.blue + ';margin:0 1px;"></span></div></td></tr></table></td>' +
     '<td valign="middle"><div style="' + F + 'font-size:20px;font-weight:700;color:#ffffff;">' + APP_NAME + '</div><div style="' + F + 'font-size:12px;color:#dbeafe;margin-top:4px;">Daily summary &middot; sent at midnight</div></td>' +
     '<td align="right" valign="middle"><div style="' + F + 'font-size:16px;font-weight:700;color:#ffffff;">' + esc_(day) + '</div><div style="' + F + 'font-size:12px;color:#dbeafe;margin-top:4px;">' + esc_(s.name) + '</div></td></tr></table></td></tr>' +
     '<tr><td bgcolor="' + C.bar + '" style="background:' + C.bar + ';height:4px;line-height:4px;font-size:0;">&nbsp;</td></tr>' +
@@ -308,8 +292,6 @@ function midnightSummaries() {
         if (!to || !allow_('send:' + to, MAX_SENDS_PER_ADDRESS_PER_DAY) || !allow_('all', MAX_EMAILS_PER_DAY)) return;
         var mail = { to: to, subject: APP_NAME + ' daily summary: ' + snap.name + ', ' + yest, body: dailyText_(snap, yest), htmlBody: dailyHtml_(snap, yest, note), name: APP_NAME };
         if (pdf) mail.attachments = [pdf];
-        var lg = logoBlob_(LOGO_PNG);
-        if (lg) mail.inlineImages = { logo: lg };
         try { MailApp.sendEmail(mail); sentAny = true; count++; } catch (err) { /* quota or address problem: try the others */ }
       });
       if (!sentAny) claimSent_(id, key, false);
@@ -433,14 +415,76 @@ function sync_(d) {
     changed = true;
   }
   if (storeDaily_(room, d)) changed = true;
+  if (d.ack && d.ack.length) cmdsAck_(a.id, d.ack);
   if (Date.now() - (room.seen || 0) > 120000) { room.seen = Date.now(); changed = true; }
   if (changed) roomPut_(a.id, room);
   var q = String(d.date || date || '');
   var rd = q && room.usage[q] && room.usage[q].src === 'companion' ? room.usage[q] : null;
   return {
     ok: true, controls: room.controls, parents: room.parents.map(function (p) { return p.name; }),
-    companion: rd ? { total: rd.total, apps: rd.apps, at: rd.at } : null
+    companion: rd ? { total: rd.total, apps: rd.apps, at: rd.at } : null,
+    cmds: cmdsGet_(a.id), hot: hot_(a.id)
   };
+}
+
+function cmdsGet_(id) {
+  var raw = PropertiesService.getScriptProperties().getProperty('cmds:' + id);
+  if (!raw) return [];
+  return JSON.parse(raw).list.filter(function (x) { return Date.now() - (x.at || 0) < 10 * 60000; });
+}
+
+function cmdsAck_(id, ids) {
+  var props = PropertiesService.getScriptProperties(), pk = 'cmds:' + id;
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var raw = props.getProperty(pk);
+    if (!raw) return;
+    var box = JSON.parse(raw), set = {};
+    ids.slice(0, 20).forEach(function (x) { set[String(x)] = 1; });
+    var left = box.list.filter(function (c) { return !set[String(c.id)]; });
+    if (left.length !== box.list.length) { box.list = left; props.setProperty(pk, JSON.stringify(box)); }
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// While a parent phone is looking at the approvals, the child's device polls every few seconds instead of every 15
+function hot_(id) { return !!CacheService.getScriptCache().get('hot:' + id); }
+
+// A parent phone queues an approval. The child's device applies it on its next sync and acknowledges it.
+function cmdAdd_(d) {
+  var a = roomAuth_(d);
+  if (!a) return { ok: false, error: 'not paired' };
+  if (roomBusy_(a.id)) return { ok: false, error: 'too many requests, slow down' };
+  var c = d.cmd || {}, type = String(c.type || ''), uid = String(c.uid || '');
+  if (!/^\d{1,20}$/.test(uid)) return { ok: false, error: 'bad child' };
+  var cmd = { type: type, uid: uid };
+  if (type === 'approve-points') {
+    cmd.amount = Math.max(1, Math.min(100000, Math.round(Number(c.amount) || 0)));
+  } else if (type === 'decide') {
+    if (!/^[A-Za-z0-9_-]{1,20}$/.test(String(c.reqId || ''))) return { ok: false, error: 'bad request' };
+    cmd.reqId = String(c.reqId); cmd.ok = c.ok === true;
+    if (c.cost) cmd.cost = Math.max(1, Math.min(100000, Math.round(Number(c.cost) || 0)));
+  } else {
+    return { ok: false, error: 'unknown command' };
+  }
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var props = PropertiesService.getScriptProperties(), pk = 'cmds:' + a.id;
+    var box = JSON.parse(props.getProperty(pk) || '{"seq":0,"list":[]}');
+    box.list = box.list.filter(function (x) { return Date.now() - (x.at || 0) < 10 * 60000; });
+    if (box.list.length >= 12) return { ok: false, error: 'too many waiting approvals' };
+    box.seq += 1;
+    cmd.id = box.seq; cmd.at = Date.now();
+    box.list.push(cmd);
+    props.setProperty(pk, JSON.stringify(box));
+  } finally {
+    lock.releaseLock();
+  }
+  CacheService.getScriptCache().put('hot:' + a.id, '1', 180);
+  return { ok: true, id: cmd.id };
 }
 
 function syncPull_(d) {
@@ -448,7 +492,11 @@ function syncPull_(d) {
   if (!a) return { ok: false, error: 'not paired' };
   if (roomBusy_(a.id)) return { ok: false, error: 'too many requests, slow down' };
   var r = a.room;
-  return { ok: true, childName: r.childName, usage: r.usage, controls: r.controls, seen: r.seen, parents: r.parents.map(function (p) { return p.name; }) };
+  CacheService.getScriptCache().put('hot:' + a.id, '1', 180);
+  var latest = {};
+  Object.keys(r.snaps || {}).sort().forEach(function (k) { latest[k.split('|')[1]] = r.snaps[k]; });
+  return { ok: true, childName: r.childName, usage: r.usage, controls: r.controls, seen: r.seen, parents: r.parents.map(function (p) { return p.name; }),
+    kids: Object.keys(latest).map(function (u) { return latest[u]; }), pending: cmdsGet_(a.id).length };
 }
 
 function ctrlSet_(d) {
@@ -469,6 +517,7 @@ function unpair_(d) {
   if (!a) return { ok: false, error: 'not paired' };
   PropertiesService.getScriptProperties().deleteProperty('room:' + a.id);
   PropertiesService.getScriptProperties().deleteProperty('sent:' + a.id);
+  PropertiesService.getScriptProperties().deleteProperty('cmds:' + a.id);
   return { ok: true };
 }
 
@@ -519,7 +568,7 @@ function cleanup() {
   var today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
   Object.keys(all).forEach(function (k) { if (k.indexOf('n:') === 0 && k.indexOf('n:' + today + ':') !== 0) props.deleteProperty(k); });
   // rooms not used for 60 days
-  Object.keys(all).forEach(function (k) { if (k.indexOf('room:') === 0) { var r = JSON.parse(all[k]); if (Date.now() - (r.seen || r.created) > 60 * 86400000) { props.deleteProperty(k); props.deleteProperty('sent:' + k.slice(5)); } } });
+  Object.keys(all).forEach(function (k) { if (k.indexOf('room:') === 0) { var r = JSON.parse(all[k]); if (Date.now() - (r.seen || r.created) > 60 * 86400000) { props.deleteProperty(k); props.deleteProperty('sent:' + k.slice(5)); props.deleteProperty('cmds:' + k.slice(5)); } } });
 }
 
 function out(obj) {

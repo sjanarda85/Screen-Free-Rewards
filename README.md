@@ -10,6 +10,11 @@ Open [index.html](index.html) in a browser. No install step. It is always the la
 
 Every day at 00:00 each parent gets an email with the summary of the day that just ended and the PDF report. It is always on. The app sends it when it is open at midnight and catches up (up to 3 days) when opened later. For families whose app is closed, the mail relay (version 4) sends it from the last numbers the child's device synced, after the owner runs `installMidnightTrigger` once. See `apps-script/SETUP.md`.
 
+## Point value in INR and live approvals
+
+- **What a point is worth:** Parent controls, Rewards, "What one point is worth". Set rupees per point and the day it starts. It only applies to points that become usable from then on. Approved points keep the value they had, and past values are locked. The child, the emails and the PDF show the value.
+- **Approved means usable:** points waiting for approval are shown separately and cannot be spent. The moment a parent approves (on the child's device or from a connected parent phone), the points show on the child's screen and can be redeemed.
+
 ## Install on a phone
 
 - **Android and iPhone, no store:** open the app link in the phone browser, then Android Chrome menu, Install app, or iPhone Safari Share, Add to Home Screen. It opens full screen and works offline.
