@@ -158,6 +158,25 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: rgb(var
 .modal-box { background: rgb(var(--surface)); border: 1px solid rgb(var(--line)); border-radius: 22px; padding: 24px; max-width: 420px; width: 100%; max-height: 82vh; overflow: auto; box-shadow: 0 30px 60px -20px rgb(0 0 0 / .8); animation: pop .25s cubic-bezier(.2,1.2,.4,1) both; }
 @keyframes pop { from { opacity: 0; transform: scale(.96) translateY(6px); } to { opacity: 1; transform: none; } }
 .modal-box h3 { font-family: var(--font-display); font-size: 20px; font-weight: 600; letter-spacing: 0; text-transform: none; color: rgb(var(--ink)); margin-bottom: 4px; }
+.seg { display: inline-flex; gap: 4px; padding: 4px; margin: 0 0 14px; background: rgb(var(--surface)); border: 1px solid rgb(var(--line)); border-radius: 14px; max-width: 100%; }
+.seg button { border: 0; background: transparent; color: rgb(var(--muted)); font: 600 13.5px var(--font-body); padding: 9px 14px; border-radius: 10px; cursor: pointer; }
+.seg button.on { background: rgb(var(--accent)); color: rgb(var(--onaccent)); }
+.lock-overlay { position: fixed; inset: 0; z-index: 500; display: none; place-items: center; text-align: center; padding: 24px; background: rgb(var(--bg)); }
+.lock-overlay::before { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse 70% 50% at 50% 30%, rgb(255 255 255 / .06), transparent 70%); }
+.lock-overlay.on { display: grid; }
+.lock-overlay .box { position: relative; max-width: 380px; display: grid; gap: 12px; justify-items: center; }
+.lock-overlay h2 { font-size: 30px; } .lock-overlay p { color: rgb(var(--muted)); }
+.lock-ico { width: 84px; height: 84px; border-radius: 26px; display: grid; place-items: center; background: linear-gradient(180deg, rgb(var(--accent)), rgb(var(--accent2))); color: rgb(var(--onaccent)); box-shadow: 0 20px 40px -18px #000; }
+.lock-ico svg { width: 40px; height: 40px; }
+body.is-locked { overflow: hidden; }
+.pair-code { font-family: var(--font-display); font-size: 40px; font-weight: 700; letter-spacing: .14em; text-align: center; padding: 16px; margin: 8px 0; background: rgb(var(--raised)); border: 1px dashed rgb(var(--accent) / .6); border-radius: 16px; user-select: all; }
+.screen-tile { display: inline-grid; grid-auto-flow: column; align-items: center; gap: 12px; margin: 2px 0 14px; padding: 10px 18px; background: rgb(var(--surface)); border: 1px solid rgb(var(--line)); border-radius: 16px; text-align: left; }
+.screen-tile b { font-family: var(--font-display); font-size: 26px; line-height: 1; } .screen-tile small { display: block; color: rgb(var(--muted)); font-size: 12px; max-width: 220px; line-height: 1.35; }
+.app-row { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; padding: 10px 2px; border-bottom: 1px solid rgb(var(--line)); }
+.app-row:last-child { border-bottom: 0; } .app-row small { display: block; color: rgb(var(--muted)); font-size: 12px; } .app-time { text-align: right; } .app-time b { font-variant-numeric: tabular-nums; }
+.btn.danger { background: linear-gradient(180deg, rgb(var(--neg)), color-mix(in srgb, rgb(var(--neg)) 75%, black)); color: #fff; }
+.row-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.banner { padding: 10px 14px; border-radius: 12px; font-size: 13.5px; margin: 8px 0; background: rgb(var(--gold) / .12); border: 1px solid rgb(var(--gold) / .4); color: rgb(var(--ink)); }
 .setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; text-align: left; }
 .setup-grid .full { grid-column: 1 / -1; }
 .setup-card h3 { font-family: var(--font-body); font-size: 11px; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; color: rgb(var(--accent)); margin: 14px 0 2px; text-align: left; }
@@ -230,7 +249,15 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: rgb(var
     <span class="logo" role="img" aria-label="Screen Free Rewards"><svg viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="lgs" x1="4" y1="2" x2="44" y2="46" gradientUnits="userSpaceOnUse"><stop style="stop-color:rgb(var(--accent))"/><stop offset="1" style="stop-color:rgb(var(--accent2))"/></linearGradient></defs><rect width="48" height="48" rx="14" fill="url(#lgs)"/><rect x=".5" y=".5" width="47" height="47" rx="13.5" fill="none" stroke="#fff" stroke-opacity=".25"/><path d="M30.9 14.6A12 12 0 1 1 17.1 14.6" fill="none" stroke-width="3.2" stroke-linecap="round" style="stroke:rgb(var(--onaccent))"/><path d="M24 17.2L25.9 22.1 30.8 24 25.9 25.9 24 30.8 22.1 25.9 17.2 24 22.1 22.1Z" style="fill:rgb(var(--onaccent))"/></svg></span>
     <h1>Set up your family</h1>
     <span class="eyebrow">Every notification goes to your email</span>
-    <div class="login-card setup-card" style="text-align:left;">
+    <div class="seg" id="setupMode" role="tablist" aria-label="Setup type"><button type="button" class="on" data-m="child">Child's device</button><button type="button" data-m="parent">My phone (parent)</button></div>
+    <div class="login-card" id="connectCard" style="display:none;text-align:left;">
+      <h3 style="margin:0 0 6px;font-family:var(--font-body);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:rgb(var(--accent));">Connect to your child's device</h3>
+      <p class="sub" style="margin:0 0 6px;">On the child's device open Parent controls, then Apps, then Show pairing code. Type the code here. You only do this once.</p>
+      <input id="cName" placeholder="Your name" autocomplete="name">
+      <input id="cCode" placeholder="Pairing code, for example K7QM-4TXD" autocapitalize="characters" autocomplete="off">
+      <button class="btn big" id="doConnect" style="width:100%;margin-top:10px;">Connect</button>
+    </div>
+    <div class="login-card setup-card" id="familyCard" style="text-align:left;">
       <h3 style="margin-top:0;">You (parent)</h3>
       <div class="setup-grid">
         <input id="sPName" placeholder="Your name" autocomplete="name">
@@ -252,6 +279,29 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: rgb(var
   </div>
 </div>
 
+<div id="remoteView" class="view">
+  <div class="page-head"><div><span class="eyebrow">Parent phone <span class="ver-inline" data-ver-inline></span></span><h2 id="rmChild">Your child</h2></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;"><select id="rmPick" style="width:auto;min-height:40px;margin:0;"></select><button class="btn secondary small" id="rmRefresh" type="button">Refresh</button><button class="btn secondary small" id="rmGuide" type="button">Guide (PDF)</button><button class="btn secondary small" id="rmAdd" type="button">Add device</button><button class="btn secondary small" id="rmDisconnect" type="button">Disconnect</button></div></div>
+  <div id="rmBody"></div>
+</div>
+
+<div id="lockOverlay" class="lock-overlay" role="alertdialog" aria-live="assertive" aria-label="Device locked">
+  <div class="box"><div class="lock-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="3"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div><h2>Locked by a parent</h2><p id="lockMsg">Ask a parent to unlock this device.</p>
+    <button class="btn secondary" id="lockUnlock" type="button">Unlock with parent PIN</button></div>
+</div>
+
+<div id="pairModal" class="modal"><div class="modal-box" style="text-align:center;">
+  <h3>Connect the parent phones</h3>
+  <p style="font-size:13px;color:rgb(var(--muted));margin:6px 0;">On each parent phone open Screen Free Rewards, choose <b>My phone (parent)</b>, and type this code. You only do this once.</p>
+  <div class="pair-code" id="pairModalCode">----</div><div class="empty" id="pairModalLeft"></div>
+  <button class="btn" id="pairModalDone" style="width:100%;margin-top:10px;">Done</button>
+</div></div>
+
+<div id="editModal" class="modal"><div class="modal-box">
+  <h3 id="editTitle">Edit</h3><div id="editFields"></div>
+  <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;"><button class="btn" id="editSave" type="button" style="flex:1;">Save</button><button class="btn secondary" id="editCancel" type="button">Cancel</button><button class="btn danger" id="editDelete" type="button">Delete</button></div>
+</div></div>
+
 <div id="childView" class="view">
   <div class="child-home">
     <span class="eyebrow">Today</span>
@@ -260,6 +310,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: rgb(var
       <svg class="ring" viewBox="0 0 220 220" aria-hidden="true"><defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1"><stop style="stop-color:rgb(var(--accent))"/><stop offset="1" style="stop-color:rgb(var(--gold))"/></linearGradient></defs><circle class="track" cx="110" cy="110" r="100"/><circle class="prog" id="ringProg" cx="110" cy="110" r="100" stroke-dasharray="628.32" stroke-dashoffset="628.32"/></svg>
       <div class="ring-center"><div class="timer" id="timer">00:00</div><div class="status-chip" id="status">Ready</div></div>
     </div>
+    <div class="screen-tile" id="screenTile"><b id="stToday">0m</b><small><span style="font-weight:600;color:rgb(var(--ink));">Screen time today</span><br><span id="stNote">This app only</span></small></div>
     <button class="btn big start" id="toggleBtn">Start</button>
     <div class="actions">
       <button class="btn primary" id="redeemBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12v9H4v-9M2 7h20v5H2zM12 21V7M12 7H7.5a2.5 2.5 0 1 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 1 0 0-5C13 2 12 7 12 7z"/></svg> Redeem points</button>
@@ -284,7 +335,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: rgb(var
     <div class="tab" data-t="sugg">Requests</div>
     <div class="tab" data-t="rewards">Rewards</div>
     <div class="tab" data-t="sibs">Siblings</div>
-    <div class="tab" data-t="profile">Profile</div><div class="tab" data-t="logs">Reports</div>
+    <div class="tab" data-t="profile">Profile</div><div class="tab" data-t="logs">Reports</div><div class="tab" data-t="apps">Apps</div><div class="tab" data-t="data">Data</div>
   </div>
   <div id="tab-overview" class="tab-content active">
     <div class="stats">
@@ -321,7 +372,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: rgb(var
     <input id="taskTitle" placeholder="Task"><input type="number" id="taskPts" placeholder="Points" value="50">
     <button class="btn" id="addTask">Assign</button></div></div>
   <div id="tab-sugg" class="tab-content"><div class="card"><h3>Requests from the child</h3>
-    <p style="font-size:12px;color:rgb(var(--muted));margin-bottom:8px;">Approve or decline. Approving a suggestion adds it to the reward list. Declining a redeem refunds the points. This list cannot be deleted.</p>
+    <p style="font-size:12px;color:rgb(var(--muted));margin-bottom:8px;">Approve or decline. Approving a suggestion adds it to the reward list. Declining a redeem refunds the points. Each request has a Delete button.</p>
     <div id="suggList"></div></div></div>
   <div id="tab-rewards" class="tab-content"><div class="card"><h3>Reward options the child can redeem</h3>
     <div id="rewardList"></div>
@@ -378,6 +429,26 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: rgb(var
     <button class="btn secondary" id="dlReport" style="margin-left:8px;">Points report PDF</button>
     <div id="logPrev" style="font-size:12px;margin-top:12px;max-height:240px;overflow:auto;"></div></div>
   </div>
+  <div id="tab-apps" class="tab-content">
+    <div id="appsBody"></div>
+    <div class="card"><h3>Parent phones</h3>
+      <p style="font-size:13px;color:rgb(var(--muted));margin:0 0 6px;">Connect your phone once to this device. You will see screen time and can lock remotely from your phone.</p>
+      <div id="pairBox"></div></div>
+  </div>
+  <div id="tab-data" class="tab-content">
+    <div class="card"><h3>Guide and your data</h3>
+      <div class="row-actions" style="margin-top:0;"><button class="btn" id="dlGuide" type="button">Download parent guide (PDF)</button><button class="btn secondary" id="dlData" type="button">Download my data (file)</button></div>
+      <p style="font-size:12.5px;color:rgb(var(--muted));margin:8px 0 0;">The guide explains every screen and control. The data file holds everything stored on this device.</p></div>
+    <div class="card"><h3>Adjust points</h3>
+      <div style="display:grid;grid-template-columns:1fr 2fr auto;gap:8px;align-items:end;"><div><label style="font-size:12px;color:rgb(var(--muted));">Points (+ or -)</label><input id="adjAmt" type="number" placeholder="e.g. 20 or -10" inputmode="numeric"></div><div><label style="font-size:12px;color:rgb(var(--muted));">Reason</label><input id="adjWhy" placeholder="Reason"></div><button class="btn" id="adjBtn" type="button" style="margin-bottom:6px;">Apply</button></div></div>
+    <div class="card"><h3>Sessions</h3><div id="dataSessions"></div></div>
+    <div class="card"><h3>Activity log</h3><div id="dataLog"></div><div class="row-actions"><button class="btn secondary small" id="clearLog" type="button">Clear activity log</button></div></div>
+    <div class="card"><h3>Parent PIN</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;"><div><label style="font-size:12px;color:rgb(var(--muted));">Current PIN</label><input id="pinOld" type="password" inputmode="numeric" autocomplete="off"></div><div><label style="font-size:12px;color:rgb(var(--muted));">New PIN (4 to 8 digits)</label><input id="pinNew" type="password" inputmode="numeric" autocomplete="off"></div><button class="btn" id="pinChange" type="button" style="margin-bottom:6px;">Change</button></div></div>
+    <div class="card"><h3>Erase everything</h3>
+      <p style="font-size:13px;color:rgb(var(--muted));margin:0 0 8px;">Deletes the family, children, points, history and settings on this device and disconnects the parent phones. This cannot be undone.</p>
+      <button class="btn danger" id="eraseAll" type="button">Erase everything on this device</button></div>
+  </div>
 </div>
 
 <div id="pinModal" class="modal"><div class="modal-box">
@@ -416,7 +487,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: rgb(var
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
 function newPdf(){ if(!window.jspdf){ alert('PDF tools could not load. Check the internet connection and try again.'); return null; } return new window.jspdf.jsPDF(); }
-const APP_VERSION='1.4.0';
+const APP_VERSION='1.5.0';
 let state = {users:[], active:null, pin:'1234', rate:1, schedules:[], log:[], loggedIn:false};
 function load(){ try{ const r=localStorage.getItem('sfr4'); if(r) Object.assign(state, JSON.parse(r)); }catch(e){} }
 function save(){ try{ localStorage.setItem('sfr4', JSON.stringify(state)); }catch(e){} }
@@ -448,6 +519,7 @@ let toastT;
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2400); }
 function updateUI(){
   const u=getU(); if(!u) return;
+  { const tt=totalFor(u,dayStr()); document.getElementById('stToday').textContent=fmtMin(tt.min); document.getElementById('stNote').textContent=tt.src==='device'?'All apps on this phone':'This app and apps a parent logged'; }
   document.getElementById('childName').textContent = 'Hi '+u.name;
   document.getElementById('childView').classList.toggle('running', !!u.activeStart);
   const live = u.activeStart ? Math.floor((Date.now()-u.activeStart)/60000 * state.rate) : 0;
@@ -481,9 +553,9 @@ function show(id){
   const el=document.getElementById(id);
   if(el){ el.classList.add('active'); if(id==='loginView'||id==='setupView') el.style.display='flex'; }
   if(id==='loginView'){ ['signupForm','forgotForm','parentLoginForm'].forEach(f=>document.getElementById(f).style.display='none'); document.getElementById('loginForm').style.display='block'; ['loginUser','loginPass','suName','suAge','suPin','forgotPin','plEmail','plPass'].forEach(f=>{ document.getElementById(f).value=''; }); }
-  const gate=(id==='loginView'||id==='setupView');
-  document.getElementById('logoutBtn').style.display = !gate ? 'inline-flex' : 'none';
-  document.getElementById('pointsPill').style.display = !gate ? '' : 'none';
+  const gate=(id==='loginView'||id==='setupView'), bare=gate||id==='remoteView';
+  document.getElementById('logoutBtn').style.display = !bare ? 'inline-flex' : 'none';
+  document.getElementById('pointsPill').style.display = !bare ? '' : 'none';
   document.body.classList.toggle('is-login', gate);
 }
 
@@ -542,6 +614,8 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active'));
   t.classList.add('active'); document.getElementById('tab-'+t.dataset.t).classList.add('active');
   if(t.dataset.t==='recon') renderRecon();
+  if(t.dataset.t==='apps'){ renderApps(); renderPair(); }
+  if(t.dataset.t==='data') renderData();
 });
 function renderParent(){
   if(state.parent){
@@ -563,16 +637,16 @@ function renderParent(){
   const u=getU(); if(!u) return;
   document.getElementById('bal').textContent=Math.floor(u.balance||0);
   document.getElementById('pend').textContent=Math.floor(u.pending||0);
-  document.getElementById('schedList').innerHTML=state.schedules.map((s,i)=>`<div class="item">${s.day} ${s.from}–${s.to} <span style="float:right;cursor:pointer;" onclick="state.schedules.splice(${i},1);save();renderParent();">×</span></div>`).join('')||'<div class="item">No windows set (always active)</div>';
-  document.getElementById('tasksList').innerHTML=(u.tasks||[]).map(t=>`<div class="item">${esc(t.title)} +${t.pts} (${t.status||'open'})</div>`).join('')||'None';
+  document.getElementById('schedList').innerHTML=state.schedules.map((s,i)=>`<div class="item" style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;"><span>${esc(s.day)} ${esc(s.from)}–${esc(s.to)}</span><span class="row-actions" style="margin:0;"><button class="btn secondary small" type="button" onclick="editSchedule(${i})">Edit</button><button class="btn secondary small" type="button" onclick="delSchedule(${i})">Delete</button></span></div>`).join('')||'<div class="item">No windows set (always active)</div>';
+  document.getElementById('tasksList').innerHTML=(u.tasks||[]).map(t=>`<div class="item"><b>${esc(t.title)}</b> · +${t.pts} pts · ${esc(t.status||'open')}<div class="row-actions"><button class="btn secondary small" type="button" onclick="editTask(${t.id})">Edit</button><button class="btn secondary small" type="button" onclick="delTask(${t.id})">Delete</button></div></div>`).join('')||'<div class="empty">No tasks yet.</div>';
   document.getElementById('suggList').innerHTML=(u.requests||[]).map(s=>{
     const actions = s.status==='pending'
-      ? `<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">${s.kind==='suggest'?`<input id="cost-${s.id}" type="number" value="${s.cost||50}" style="width:90px;margin:0;">`:''}<button class="btn small" onclick="decideRequest(${s.id},true)">Approve</button><button class="btn secondary small" onclick="decideRequest(${s.id},false)">Decline</button></div>`
-      : `<div style="margin-top:4px;color:rgb(var(--accent));">${esc(s.status)}</div>`;
+      ? `<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">${s.kind==='suggest'?`<input id="cost-${s.id}" type="number" value="${s.cost||50}" style="width:90px;margin:0;">`:''}<button class="btn small" onclick="decideRequest(${s.id},true)">Approve</button><button class="btn secondary small" onclick="decideRequest(${s.id},false)">Decline</button><button class="btn secondary small" onclick="deleteRequest(${s.id})">Delete</button></div>`
+      : `<div style="margin-top:4px;color:rgb(var(--accent));">${esc(s.status)} <button class="btn secondary small" type="button" onclick="deleteRequest(${s.id})">Delete</button></div>`;
     return `<div class="item"><b>${esc(s.kind)}</b> · ${esc(s.name)}${s.cost?` · ${s.cost} pts`:''}<div style="color:rgb(var(--muted));">${esc(s.desc||'')} · ${new Date(s.ts).toLocaleString()}</div>${actions}</div>`;
   }).join('')||'<div class="item">No requests yet</div>';
-  document.getElementById('rewardList').innerHTML=(u.rewards||[]).map(r=>`<div class="item">${esc(r.name)} · ${r.cost} pts<div style="color:rgb(var(--muted));">${esc(r.desc||'')}</div><button class="btn secondary small" onclick="removeReward(${r.id})">Remove from list</button></div>`).join('')||'<div class="item">No rewards yet. Add one below.</div>';
-  document.getElementById('sibsList').innerHTML=state.users.map(us=>`<div class="item">${esc(us.name)} ${us.id===state.active?'•':''} <button class="btn small" onclick="state.active=${us.id};save();renderParent();updateUI();">Switch</button></div>`).join('');
+  document.getElementById('rewardList').innerHTML=(u.rewards||[]).map(r=>`<div class="item"><b>${esc(r.name)}</b> · ${r.cost} pts<div style="color:rgb(var(--muted));">${esc(r.desc||'')}</div><div class="row-actions"><button class="btn secondary small" type="button" onclick="editReward(${r.id})">Edit</button><button class="btn secondary small" type="button" onclick="delReward(${r.id})">Delete</button></div></div>`).join('')||'<div class="item">No rewards yet. Add one below.</div>';
+  document.getElementById('sibsList').innerHTML=state.users.map(us=>`<div class="item"><b>${esc(us.name)}</b>${us.age?', age '+esc(us.age):''} ${us.id===state.active?'<span style="color:rgb(var(--accent));">• current</span>':''}<div class="row-actions"><button class="btn small" type="button" onclick="state.active=${us.id};save();renderParent();updateUI();renderApps();">Switch</button><button class="btn secondary small" type="button" onclick="editChild(${us.id})">Edit</button><button class="btn secondary small" type="button" onclick="delChild(${us.id})">Delete</button></div></div>`).join('');
   { const t0=new Date(); t0.setHours(0,0,0,0); const DAY=86400000, mins=s=>Math.floor((s.end-s.start)/60000);
     const ss=u.sessions||[]; const run=u.activeStart?Math.floor((Date.now()-u.activeStart)/60000):0;
     document.getElementById('todayMin').textContent=ss.filter(s=>s.start>=t0.getTime()).reduce((a,s)=>a+mins(s),0)+run;
@@ -593,7 +667,7 @@ function renderRecon(){
   const today=new Date(); today.setHours(0,0,0,0);
   const actual=(u.sessions||[]).filter(s=>s.start>=today.getTime()).reduce((s,x)=>s+Math.floor((x.end-x.start)/60000),0);
   document.getElementById('reconSummary').innerHTML=`<div>Scheduled today: <b>${scheduled} min</b></div><div>Actual timer: <b>${actual} min</b></div><div>Unused: <b>${Math.max(0,scheduled-actual)} min</b></div>`;
-  document.getElementById('appLogList').innerHTML=(u.appLog||[]).slice(0,15).map(a=>`<div class="item">${new Date(a.ts).toLocaleString()} — ${esc(a.name)} (${a.mins} min)</div>`).join('')||'<div class="item">None logged</div>';
+  document.getElementById('appLogList').innerHTML=(u.appLog||[]).slice(0,15).map(a=>`<div class="item">${new Date(a.ts).toLocaleString()} — <b>${esc(a.name)}</b> (${a.mins} min)<div class="row-actions"><button class="btn secondary small" type="button" onclick="editAppLog(${a.ts})">Edit</button><button class="btn secondary small" type="button" onclick="delAppLog(${a.ts})">Delete</button></div></div>`).join('')||'<div class="item">None logged</div>';
 }
 function esc(s){ return String(s??'').replace(/[&<>"']/g, function(c){ return {'&':'\u0026amp;','<':'\u0026lt;','>':'\u0026gt;','"':'\u0026quot;',"'":'\u0026#39;'}[c]; }); }
 function parentContacts(){
@@ -1021,8 +1095,207 @@ document.getElementById('doSetup').onclick=async()=>{
   logA('setup','Family set up for '+child,'parent'); show('childView'); startLoop();
   if(validMailUrl(mailUrl())){
     for(const e of [email,email2].filter(Boolean)){ try{ if(!(await verifyEmail(e))) toast('You can verify '+e+' later in Parent controls, Profile.'); }catch(err){ alert('Could not verify '+e+': '+(err&&err.message||'offline')+'. You can verify later in Parent controls, Profile.'); } }
+    await showPairModal();
   } else toast('Setup done. Email notifications start once the app owner adds the mail link.');
 };
+const GUIDE_PDF='data:application/pdf;base64,JVBERi0xLjQKJZOMi54gUmVwb3J0TGFiIEdlbmVyYXRlZCBQREYgZG9jdW1lbnQgKG9wZW5zb3VyY2UpCjEgMCBvYmoKPDwKL0YxIDIgMCBSIC9GMiAzIDAgUgo+PgplbmRvYmoKMiAwIG9iago8PAovQmFzZUZvbnQgL0hlbHZldGljYSAvRW5jb2RpbmcgL1dpbkFuc2lFbmNvZGluZyAvTmFtZSAvRjEgL1N1YnR5cGUgL1R5cGUxIC9UeXBlIC9Gb250Cj4+CmVuZG9iagozIDAgb2JqCjw8Ci9CYXNlRm9udCAvSGVsdmV0aWNhLUJvbGQgL0VuY29kaW5nIC9XaW5BbnNpRW5jb2RpbmcgL05hbWUgL0YyIC9TdWJ0eXBlIC9UeXBlMSAvVHlwZSAvRm9udAo+PgplbmRvYmoKNCAwIG9iago8PAovQ29udGVudHMgMTMgMCBSIC9NZWRpYUJveCBbIDAgMCA1OTUuMjc1NiA4NDEuODg5OCBdIC9QYXJlbnQgMTIgMCBSIC9SZXNvdXJjZXMgPDwKL0ZvbnQgMSAwIFIgL1Byb2NTZXQgWyAvUERGIC9UZXh0IC9JbWFnZUIgL0ltYWdlQyAvSW1hZ2VJIF0KPj4gL1JvdGF0ZSAwIC9UcmFucyA8PAoKPj4gCiAgL1R5cGUgL1BhZ2UKPj4KZW5kb2JqCjUgMCBvYmoKPDwKL0NvbnRlbnRzIDE0IDAgUiAvTWVkaWFCb3ggWyAwIDAgNTk1LjI3NTYgODQxLjg4OTggXSAvUGFyZW50IDEyIDAgUiAvUmVzb3VyY2VzIDw8Ci9Gb250IDEgMCBSIC9Qcm9jU2V0IFsgL1BERiAvVGV4dCAvSW1hZ2VCIC9JbWFnZUMgL0ltYWdlSSBdCj4+IC9Sb3RhdGUgMCAvVHJhbnMgPDwKCj4+IAogIC9UeXBlIC9QYWdlCj4+CmVuZG9iago2IDAgb2JqCjw8Ci9Db250ZW50cyAxNSAwIFIgL01lZGlhQm94IFsgMCAwIDU5NS4yNzU2IDg0MS44ODk4IF0gL1BhcmVudCAxMiAwIFIgL1Jlc291cmNlcyA8PAovRm9udCAxIDAgUiAvUHJvY1NldCBbIC9QREYgL1RleHQgL0ltYWdlQiAvSW1hZ2VDIC9JbWFnZUkgXQo+PiAvUm90YXRlIDAgL1RyYW5zIDw8Cgo+PiAKICAvVHlwZSAvUGFnZQo+PgplbmRvYmoKNyAwIG9iago8PAovQ29udGVudHMgMTYgMCBSIC9NZWRpYUJveCBbIDAgMCA1OTUuMjc1NiA4NDEuODg5OCBdIC9QYXJlbnQgMTIgMCBSIC9SZXNvdXJjZXMgPDwKL0ZvbnQgMSAwIFIgL1Byb2NTZXQgWyAvUERGIC9UZXh0IC9JbWFnZUIgL0ltYWdlQyAvSW1hZ2VJIF0KPj4gL1JvdGF0ZSAwIC9UcmFucyA8PAoKPj4gCiAgL1R5cGUgL1BhZ2UKPj4KZW5kb2JqCjggMCBvYmoKPDwKL0NvbnRlbnRzIDE3IDAgUiAvTWVkaWFCb3ggWyAwIDAgNTk1LjI3NTYgODQxLjg4OTggXSAvUGFyZW50IDEyIDAgUiAvUmVzb3VyY2VzIDw8Ci9Gb250IDEgMCBSIC9Qcm9jU2V0IFsgL1BERiAvVGV4dCAvSW1hZ2VCIC9JbWFnZUMgL0ltYWdlSSBdCj4+IC9Sb3RhdGUgMCAvVHJhbnMgPDwKCj4+IAogIC9UeXBlIC9QYWdlCj4+CmVuZG9iago5IDAgb2JqCjw8Ci9Db250ZW50cyAxOCAwIFIgL01lZGlhQm94IFsgMCAwIDU5NS4yNzU2IDg0MS44ODk4IF0gL1BhcmVudCAxMiAwIFIgL1Jlc291cmNlcyA8PAovRm9udCAxIDAgUiAvUHJvY1NldCBbIC9QREYgL1RleHQgL0ltYWdlQiAvSW1hZ2VDIC9JbWFnZUkgXQo+PiAvUm90YXRlIDAgL1RyYW5zIDw8Cgo+PiAKICAvVHlwZSAvUGFnZQo+PgplbmRvYmoKMTAgMCBvYmoKPDwKL1BhZ2VNb2RlIC9Vc2VOb25lIC9QYWdlcyAxMiAwIFIgL1R5cGUgL0NhdGFsb2cKPj4KZW5kb2JqCjExIDAgb2JqCjw8Ci9BdXRob3IgKFNjcmVlbiBGcmVlIFJld2FyZHMpIC9DcmVhdGlvbkRhdGUgKEQ6MjAyNjEwMTcyMDIwMjMrMDAnMDAnKSAvQ3JlYXRvciAoXCh1bnNwZWNpZmllZFwpKSAvS2V5d29yZHMgKCkgL01vZERhdGUgKEQ6MjAyNjEwMTcyMDIwMjMrMDAnMDAnKSAvUHJvZHVjZXIgKFJlcG9ydExhYiBQREYgTGlicmFyeSAtIFwob3BlbnNvdXJjZVwpKSAKICAvU3ViamVjdCAoXCh1bnNwZWNpZmllZFwpKSAvVGl0bGUgKFNjcmVlbiBGcmVlIFJld2FyZHMgcGFyZW50IGd1aWRlIHYxLjUuMCkgL1RyYXBwZWQgL0ZhbHNlCj4+CmVuZG9iagoxMiAwIG9iago8PAovQ291bnQgNiAvS2lkcyBbIDQgMCBSIDUgMCBSIDYgMCBSIDcgMCBSIDggMCBSIDkgMCBSIF0gL1R5cGUgL1BhZ2VzCj4+CmVuZG9iagoxMyAwIG9iago8PAovRmlsdGVyIFsgL0FTQ0lJODVEZWNvZGUgL0ZsYXRlRGVjb2RlIF0gL0xlbmd0aCAxNTg2Cj4+CnN0cmVhbQpHYiEjWzlsbyZJJkFAQzJsbiorcDVtYCg2XXQnIWRFTW8jKkFbUnBJQDFvbDVPRyFbNWsnLzQ7XjpQTDo7MlNuYjFIaWYjbylmLSJxZl5sT0tmT0RRYk0+JC0hSWdaWVlMYWMoSkdCOFZjWzssWyQuSl8ycWgwNjcuJiReL1FadFYha29QMSwhVyteUWghdVFvKGV0PltwLFMmayxSMTtYblVCSysnRy9gUiNuLVY+PVdIPyheZ2JUYSY5aio6JW1tYEVjS0RsQiFHQSFjK1lNbXVNbkQkJEdtUDh0KyhzJ2VCPVByM2JiZWFNQXRMK0VJSzgvL2MpLixyRTpfXUtWcyxpZ3JzSkFsYztOO2EjZ2t0dE5bInJzaTRVUitdQkBvIyE/bWdQbVtBWGYvN0A+ZTVWKlNiQyNeZmk5TGJddEVMPlFVMyJzWUpJJ3U6Jk09cSs7JkdTRiZfMDJXKUxHcks6LjRRTlJkTFhfaShSPEtiPyw4QylAQVs3P1pbMV1tY0xSPktdNS1sYlA2TzQ+SVpGZzhhXW9bJjhmLidaYUVKTDJoaVRPSlVgWCEkI15oUyZpV1g8UXA1ak9XUEM5MFxvSSgkb25hLWM6cElFRlA/KzhybE1CbkBuWmJLcHJqUXRiUVgvY0dyZXA0LDE5VjhfQEpfS3BBJC8zKGhWSjwxXS9qV0pUWnFKcTdaZGJYSy5uRVwlIzRaI2YidT0qUUZyYHErRXI/OTdwMEFKJWtkViFAIUM1OTpmIWBqdSJvQlEuQWY2NmBEKFA5Mj0xaDxMcENnPTIhWTdVNUs6YltdNm5JO0xIZ0x0KFxQOVBSKVovUGVhJ11XSGAxPF9GK0hmXVU9TGRdQzg9NW5jKE4+VS1FOktiNEg9IjReQjFDS1lUWk1oOG9gXV9KayFiJDgiS2NKRC8hRiUvJTE/Wz5hXCw8L1gnVDFCOiJebydCJGIsJ0wwQWQ9VjAuKFYiRHFJVlZRRE0sTGdIYE9DUyNbYGs5WFkiN0MkO2hMb2txIV49RzAkPkhLWVdPSyNsWCVeIW9QK2FZODs1YU9JaUxmLEo+NDhbO1IjNjEndUEhLCgtIylxQipiXUtOdGglT2FtbFZyTD41W0dWKjtEal4ySlYvKVRsayM2Nm9gJ0psP1JIXC8tQDE0S2FebGBzPUNLUzFENXRjclpKQFVtVmxuQy1eM0RgV2hLXDByY0NxQi5PIyMsayM9XWQ0bWBVLiE0WVJZSmlJc1siSmpXNj0rNiVqWE9iWEJeYj89VDlzKThhM0dQcD5ZSFc8QDxZKUkzMzxnUCFgb0IkJGMlaHE1TlE6JVxwLkQkImtMLj1hdGBpQVo4OCpHN2ZBTGc4JDlzJz4tVURIXENgPl1HbF0kYVdIVmpfOy9gJG50KDZhImdTS3UpJEZqVT8kclRvOVJUOylYTCdaVSgyOURJWFotNmM/V1xCYVBRbWRUJChQbV5CK0soVCdPcVguaDoiOipuajsiQjZPWzsqcTYyPS9tSkQmdTdGKFEzOEpYPDw0VWViSWpeKEw+Ji9dZk5oMlU8Ny8vbmRLOE5lcW11WFkpQixWTF05VlNWUk9iS3BMPy5ANmUxOTZEPmgtYEBuJ10zZCtIVE1gcUpcUDhPa1JMQFVsV3BJX3RyIlozMyFLckQick1UXT5tRzwzM2VmQCgyVVNoNGsmQjlvb24uMS8kXmVxRHRhbl9qLWFuazR1Llw8MHNUdU4sSStxVlE0TTdcKk8mOiE5Q1A6cWdeJ1k0JHVVMTk6YU46YUFLLjFfNGtgbCM6PklWL1VYTV4yRE5ESDZURkUrXVNLRCQkPiFdR21vNlhSNWMvZidib1E1T3FqTnMwSTZQanByN1FqWkJfVjVDJFVzSix0Xz1JLCg4UzxTLTBiSjI7XjtzNylgX1JhIU8xJDVzKyV1XFNcZWhjTDkzOUdGSFFuLlU5V0xnPTdpNXRZLVwxaE9RQ0smPCYvMGdIWk42NE5RLW1kNT1raUlcbHRxN1NNa3JCdEouVy42azBHTipsMlNCQ0dcNSl0VVtaQHFIcUlOVT07SFBcX1xIWmFadEI4PWteJHFPal9QRzc5YD4zO09WWXR+PmVuZHN0cmVhbQplbmRvYmoKMTQgMCBvYmoKPDwKL0ZpbHRlciBbIC9BU0NJSTg1RGVjb2RlIC9GbGF0ZURlY29kZSBdIC9MZW5ndGggMjY2MQo+PgpzdHJlYW0KR2IhI1xnTiklLiZxMExVb1wxaW8yRj9vWV1RbiE1bF5eVyw9SVJCLVEhXDI6T3RgYT0lUkY2dVdyO19bIyJYVzctIU51ZUNScF0sUC41Vm9vXVs7UzM7Qiw4aGllNVpob0c2YycqbXNCR1JFNT01KWF1RGlWO2NDMVpsV0wpWzQkSWA4TzlZSXEtTWxUVU1EZEFwS0lAJG4kXT5xamJXRiZqbXNRcVRHO1tkWTQnMzlOXXFgYVBtMVkhI0JWc0t0KHBabmZUZCRpSSdLcSdsYDxGP0FPTk1fXWdJZ0AoXyQra2k7JkxwXz8hT0RuJGhlXEBmS24hVzMyXGs0M11qRlVYbWxeVjFXI0tDUFFmcmwlRDgpXEY1Y0xmJi5TTCosblMnVjBEO1tDdV5GYlBaPGByJCxoVEY4PnJJMDYnIWhDXzopXidgJkRzZ1dzTiZcWmVESjJAIjRhUGpjSGohb0lYLllrYUkia1FPdFlUXTN1OG8wXyRSVEpFTCIuLFlkPEwwTG9UWCVgODBnZmJjKkE6Kl08M1lVSEZWTE0qZzU3blw4MGFsYmI3JXQ1NyZzKiJtOUFJPic2UlBWP2E2bnRmJWVxPCJtKj9uQ2cjV0EtSjI/c09sPDRyWmN1aU9CLDIzYUU/YkAzOGUjRD4wP2trcSUzdDgoaVVWXzcuT0luISRlMTFeJ0ZLTTY7VE0hLyxUJlcoPTFBRWgxOSZqdTA1MVFZOTIpVUZuPW02ajNKWGRhUzNfSmU9SVhqKWBccExSSSNiRkUwVXFQMVNTKDJMNlFbLzlgJUBNSSonQ2MrUm1EJEU7PFomSGVZWFlhZENfUl5CSWc3cyI2bSUoJiJyQmBPcTg0cWFpSG8uLzk6LGVrTWNzKWE8bShpLUY8U3JzVUtGPElMViYrXidcKyovPFFoQTNVcFgvKmJgcEk+KDs1JiJCcCJzPVNDLz1zalREWVw2JlVSTDErOlEsNz8lbDNYYDEvalxWNGUmOyJsXl06YjNGV1UscC9xQDJSb09wRUY6Mm8iUEB0V0pEPilRRlAxamlUQnRlaW9Vb2xBJyFfKWYpImVUS0JxNSY/R2hibkwpQUkrYXUtLEciQ3ByJSYxLERkZCZdV2AkcEstV2djKCVNal1ESjxRPV5nOU0laG9uLm88OysmOT9nQU4+ampZQEJtYVlFJWMwVDNZX2VZMHV0TDddZjUyJjJqTWAuN01NLislK0U+Mi0nQGo8V0pNcj0hI0hoSFNsIjNWaWhgMz1PYGZXOjVtZXVPVTMvNWlmOzBWXGFGXzc7LCUjT2hcKFJxO1RGcW5dKzJzUCRsUVwobWllW0RLJyU5TGw6ZmBoSy8wbmRVZFJvLW0jKzglZCY+ay9LZTJHWWNuXUpCbCJENVwoUSpZYEYuOnN0UlU7bFBLMDY0SEUnKXA6W2VJVSo8LHBNL3JST1MpclZvM1habG9PbyU+YUZKS09HNydQZFQ9VXM+b2A5LXE+bj0zUmtycTJtLXJpQyxQOlRfPz1uVVktSnQ7ZkQxMXJtKGNcY1MoMjRnW0YxJ18yTiIlYiQ0MVM2Imc+b1plZiJYXTNeS2dRb0lwRXEhPkglclc5Tjs2WUo7I1A/WzVjPVclVlBeQSwmK14sWkQxZCNTS2tjb2RJI288XElDTiglRk4xPEtBc0ZlLm51aTpCS2BQT0JMJEkzMEwsWzg6ZCgwITcoRk5Sb0hXTnFaTVFqMnByPFRRIWgjbUk/QCVPI1taWj5KMkU0UGpjX1tjcjopJTJZMjBnbEs9c0AkKThNZy5UVXRrL20wJjsobFYhNSMuN2NlY3RsT2QvIUlDSygjSnVRbjY7TnBDWTFxKmptVUMoaiZqT2QlLSdDO0AsW3NBbS8rbHMwTWdlU3AhbTpebllkSVMlTG1EXjJQUXJpJWkzYkh1PHM0RmZabCc0PzIzKjgkKFoyb0chQik0LkpmcStEZVVoTiZrY09qVjNtck9FbU5BJExOQiRDPC5aT0BWTCZmanF1NltsTHFjMEFtbmJaIT51RyJPJz1SXEVXWSs3Tic7cW9KQlNXZzM/cC48TVxPZEJOPSFFRzpEYzE0OWtCNl4rRSonUFNUNUktXUFxSGMrNXFuYFM0U2AwZSkwJ0M6JiNNYGJhTG5YUVk+OWJuXEtSITdoY20xaSQtYDdiIlJvT21tW20rXmgmNiNudG9hLjltV11TTz0nS0J0Sy5KJzEmYGsnbkE0IWw2VmBHJTdHakRML1lNQWl1bEkqaDcoZzQ2KV8hS0JVKitJXT8mWmkuY1xiOWNTLVZLWi09ZU9MXzdJKDgncF9uQjQqVzMiSy0wRVFfRHFwI0AtXEElM1N0ZVtPTiRUTF8yMmNeQjlHalpWMko1JTQwJWMqW1JcMFpIQF8hTiNmQCVkQ3RhNSJSRj1nSDtfa0dMVTEuUDchYzVObGVSXmNEclsqQE9aMm9Ca2lqMmJjME8wOTxyWnE7PiJCanBKPVRXIURDKlQ8Z0tRayRCciRBUThvYFoucDZDdEZaP2xVWy0yYyZDSSlfUylnSURRTltlQj9RY0siTF8uXGJFaTAlWCxTOjFQUSteTmMtUztJZW5CPzxKNWRsW1lTJDNhalRFQyhtWFlJWCgkZEA4IixOYD1fcTEhX1Q3PiQzYlxJbUVcTic5cFM+a3FeUihsV0ByVjhbKGdsQnFXblpdL2RbJk5IcjY5TnVKSmRWTWpXXWBJbXNZNENRYT85UFQ3cTQyUFUkRzlVPWFaXlUuTjxLMiwsUHRfRTVNbGFITSs6aGxMNmU6aytZJEAzKjYna0dKNF0udTRTcS9Sb1JGR1FBUWw5VUkwTnROQzMibFpPXT4wcTgoOk5ZLElFSHI6bTF1NmFFXSc+W2hdTjZmUXQhMnJZWjJHWGVOKmEpK3EkM3IpSnFSJlBQTVAuX2Q7YDtoIj9XXkRGR25qVT5hWUcyRzdALEpvdDMwOGlfLz5lOCxgR0V1N0hTOU9xQT9WdCtDT28nRiJKOXVCWlNgVzwmTmchaTkoPWpxOCNdZ0deZVM7QFBRPVAuTi1RJEZRXFhNYmg/ZFdgW25DXzQwQik5XFhVaSkyZF0tW0VJYCZQRkMxWHJDPkgyVSJySVptWWhaX0JCKT9INUYhYTJecjFYOEh0TlNYXjkqN2BhOEJAKkQwRTlVQFU2TD00QTpoXT9OZlgiKyg+QDBwOC1tVkZqJ28pJkhkU3BOaFstOUp1RFJrckxsUWFlJUhQOF05dHJqZkdaZSttbE5JbzB0QjhoKFMpX0RVRGpeZylQKiRoJWs8J1Q6JF5tZ1hmMSdCbGMvYEYtI0wnJTowRmxTTDNLMUdeaVdeO2ZLTD5NdCdkZGgwVHQmUGJxN0VAL1FtU0VKKChFRmpPcFlXNDkhY149RkFfKzUxL1laOUxtYGglMXA7WGhNbCpCU1I4KTVERitENVMuYz8yIilCKz1MYklCWlAkRWZTZ0U3WVRdbCdJPz5NRTtJazAqMV5CRTksOitfPl1EOiYjNTM7WUIvQVx1VX4+ZW5kc3RyZWFtCmVuZG9iagoxNSAwIG9iago8PAovRmlsdGVyIFsgL0FTQ0lJODVEZWNvZGUgL0ZsYXRlRGVjb2RlIF0gL0xlbmd0aCAyODcyCj4+CnN0cmVhbQpHYXVITT5BcjkrJnE4MDFSKCY4Mz5jdCQ7YzlBKGFlKldrV2JyVC82JGhULlhCTnFTaz9BWFxOaTtFQCs2Vj1aTnBtTVBmN0BdYUAzNV1aaGhkIis5X1oqa2o6LDc+MUEsLF9XIjFNXSQibiIsXmBhPCs1XkFAI009ZVRhPSpcXStNR2lbP0JjdUw8WUIzMldtZ2wiOkwkW2A0Y2NHRDdCVHAuODBqW3NIKjZWJzouYmNgczlUbmFRZSRUU2BGZ2JsPUhrTmdyQzRnMjlhMzQhR0FhK3E0RSFcNFtlU0FGbVlhM2VqTiVzUmRUVVonXEhrazVWSF5BbmQnVVopLmc1NWswTUc1KVFlaGRRR0BRSzZYQUkkPjI6aWNrbWBqMF45cm0+YnBlImAwWz1yak1TPGM5LF1dImJdV11GNSM3aF9PU0RjIXRNKSU9LklzSjZAOlpyWW9LIUg2TycuSjE+Q1FCViFyVXFlUTheJStgZ20xcCFdajU4aCJoa19iVixrUHBrW21VWjlxYytjRWUkSTFTMUA6MXNCcEJeZipfIWxucjYqVmVoSGo6QyY+PldhUV1rVEJlSSxLanU7XzAsOCpETTRYKmtlTVFEZVRjX0NHTVFaUS9hWzdxbFh1MlpTLVkrTU5wY1pVMFdkLVRONG08P1stPUknVTA8aSdCR09gVyhtN0wxck0+blpPPjBdUSxHa3VEX1dxSDFpRyI+ISQhPCFdanBHIWs/JUpHO0x1aDhiT28hREc0QHNNdC40XFhfPylIazVaXlk4MVgkazUqMTorczcuYGMuIytmbCk5V3M3NUJNOSlDM2RrczZcS0hpIVI6b0EjMUEvaXBTSCcoYEpiMiFOY2lVXTJyZy8zYEVSRUhINiYsYzZQS2lnLkNGc1BpJDo+aDNhaV9gYnJnTE04aGtqUlNcanIvR1VYSz5wM108XGJUaGM+NjguZGQob21DIzNjR0NeaSo+cGheRWRWWW4kYVduaz9HWDF1MDNJL1dQX3IvQF0yXnJjSSgyNVcrLShhKEA5dSREO1wjWUIuWkxEPSdRdE1YdD8hRUFfM2FXXWUvP04nITFrWHRmO0o5RiJhI2Q9NzBSVCNFKVViRVowR2JINGokYC1TW2thNEBla10/RHI4QUF0PVBYJyJdPituWlpiPS1HYyE0VnFJMHAoZGcySiVsODo9Z0tzIlVtdUtwT3QrYHQpcVhjM1klMVlxYHA9RUdkPGxeQTJeWiVGYmtaZydSVjxvXnIlKikjak8yKE9XbStMWUshO1Y7ZjxyTVBjYE1QL0NKPE5nTC1vW05XP01ZTlFUUE0tUVRrOGRDIj03Ok5nYjM6TyojJWpEYmE2azAyWzNEVCxfLztiXVMnbiFYRUROM18jWldOSTVDPF9FT2MjPCVUTzxzXiMrYSlBKzNNZS4jTUhIcWI6dUg0QzZeSTs4VjV0QmY7dXNnXlM0REVOVj1GOlg6P1lIL00rVihlWzZFc0gjZSExNXBCOjNNQTFsblIuU2tcNjdtPVBEL2UzTHMnUDEjVllFRCIjPFlfa1RfNGZFZkJpbFMkMFh0ZE9eaTBsKS9lSWlpSVhvNkpmZCY2KSU+XCdLVHM9aUs8S24/YEtbUHFHckpqLiNSN0xcOE5bMycwLFk4WkNPczMqbTxoRWBERlVsPWNaLGhgKiUzL0FiZnNwXyRRQ2pXSW9YOlNlO2hJbGlpKEdmUkltU2FcKiNGbmAoKDdFQ01zP2g2SyttZjdPQ0JzTW9OQHUuJE4xaDctLyZhR1syK1wuL0xTTiNZKT1iWEQ2I1BDcEklWVBLYkVWXklSaS1QaUohV3JMaXBfM3FHRWVsUGRlaGBEM15TLU8lallTIT1YRCtoSk4wa1Y4UEhNPFkycjokKzMwZWtkXEBgaSRfNFFtdUovUDIsVG5GJ0lFUFFHamchO0VHZV5XMGpaIzoyOyleUS0+QSdnLD0rOz5DLHFjV0RLclhqUlErZSsxVyNAUlopNjBuLEFUTVNFKVdyLV5kWGB1PiQ9Z1VgMyMxWktwPjFDT1YvLmdFazlKKUZQcFs6bFhKUDcrXTY5Ul5kSHROIUhyN0siOEtXNmslY21yY1JFZWFFbWBjPDc2aU9GaSIzYWIqcD4sNytZYWNOSEwuSCtlLFpiaXFqXTRZLDJfNm9JLmVzZD9KJlZybjxjPjVIZCdiOWJPcDBTKFsrYjROJWdNY1ZvNSdhaFkvU084aSw0LEFpM1RqJHMkPlwrdVloW0RWbzVeMUhAMycwYmRRNDJWQ0wnPT1BLyc4X2BMdWctOmhAMWNab3VpOCFUTCdyWW1PNjQlUz5iWD1kbzlORjlOLUJLbWVCM0Y2Z2VcJEYjNyFgWWJqRnA0J2FbP0E6Ikw1YjpPWF9LUitFPjQ5MSM/RkI7Wj1Jb0M3L1ktPmg6YTAzMTIrKUFpOz8lZ0QyMnVQNVpSRjBsJ0xgR0teUCpEXDZfMChJYFRab2BlYEBILEVJTjtRJFR1Z3QrZTdgJS1kPVY1Lj85Vz1Ob25aLShOXmUzVWBSb2wsOFU0ZHNCWmxyPS4laWBVJSM+XiYkS0haam05KmVWS04hNHBhOD02RDhmTyc8SjJWNlljaSdPXzpyWilwLyZQOjlHcGw5J1VOMkdKVF1rVmN0TWs7KTY4Yj1SUV9bVjwmXlouKGpaUmpwcGplUW8jQ09NKyhIM2ZVNW0nPEw0U2BvPlosTTI9S0tcQi4hKzwvRyQkQmJdKzZXVkg/JzspSmhCQlhrSTU8TWQjKWAlJmFFUTtaN2Q4LTReUEkmP2RJL1o+LyFLRTVERlU7RDtESDR0JVJrWzMsK0VwSi9nRlhCLjQsbDY2JVNLLUJTTzcsai9KUypWcjMyNGNmMj9XP1JrRysuLFpsV25ZKkc5Xz8xWEpoZS4sPFw3JSgrTCJwMTJPPF9IWEBTWW8uNVEvVDU5MzRqWmstZiFhJCdIT0dZPWg3TS5uRm0lQ21kKT0/IiFyUCdaXCRvTU1eVTtcO1QvLDA7Y0NgcVdWWDdfVW5GdEUtRiJ1NHE1dTtvQzJcJG5rXU4sUUtvPlElRmtXbWBxVnFiNDU7OEIiNDdlMi4iQU84aTAuVzZRPm1LajgibEEtO0tWNWdPc1I5TmI/Yyw+TEZXPjlWWVZPWT1bQVAlKStoX15lJGBDV0tMYE4ydDdlMk5hUnFdaiJRQ2IvaTctKmFLPDU/JCYsO2MxYjokO2U7UGBJdD9JNW4haVkvbChcaCkwNj9gWG5xJi8jPFNeUmtRVS9zb1EnLztsXUY5WTcrbFlvYzFlUXVPMVVJZVYjZV4qOiNialtOUFhTJ0RFYFAxTF5XQWUkVFJTLVBJLjdGTFxGPFU+TFptMm42ZF9iLkVZbzhWaVVSUV8wYVQ4JDlnITNSUlZNK1JjJm0kLE1tLFJIby4raldBcGoyMTdfPVRWVSIiWWpULS9GTiRuSE1HWlY1KlktMVcyb2xmJC9kK1ouRDtJV00+WGFbc0oycjBYaEpFa0NZaVNlKU1aITQrPlhJQyEnRUkzJTVdVmY6Nz0uImtbL2ZmJmplX0siKU8mNClQLGNxMU1wJkBaM1A+LD4rInI7VjVsVmEsWDpNNUJNbDtba29Ga0kkclxtMiU0UmhRWWdoM0ZVQUotK0wlW3EyOG47JlwtaylkR1pccnFjJERWSkoyMDEjX1MxV0kkJDtgSVA6ZmNqMEdgWFY2LUpaWjhiQUMtMjFMaDpzTzdiKzBhPi1eMWg8OFFWQ15SO2deLDdMcztfQiYwYGpXUyhuJjNUaTQqKUkzNE83azdsO34+ZW5kc3RyZWFtCmVuZG9iagoxNiAwIG9iago8PAovRmlsdGVyIFsgL0FTQ0lJODVEZWNvZGUgL0ZsYXRlRGVjb2RlIF0gL0xlbmd0aCAyODg3Cj4+CnN0cmVhbQpHYiEjXT5CQVEtJnE5U1lmWEU9TiM6NFYtcWtRMnBsQWsyL1tYOWokbkkkcWImZlpeKThdaHNyb1oqUzAhMk4wQVY8RkYrUkZpWWBATWVxL0lfLHUsWWphO0k1NmhqUCV0NDY7TCcrb1lyc0lPbTAoZVZqXHBzOEUiZ15QUSVRbi0iQUZbYT1oa0IuIk9IMiJMb3NrbGEkbihmXVx0IklfJ0xGRzFvdUBISlVeXEtMKGJzbyFhP2dDUiEjQlNycHBiJ0hGM2RwZ2lJI09Nbmkzc2xhMmE3T2A8JU91VEtlIlFqNDInP29mXypnOk8nREtkWENvYyNrLz9pWVBXOWVoaFAhJ1tpX2cyNjJyViVzLzc0PTdZSGc4NjwicjZpSGo6OFU+O3VOZWw5R25SSHE/JF5OJkJqWCFvMDUsK0kmdWcqNGBJSG9MIVFuRUdOXClzMWgraltMZCtqa0RIaWNaUFpDL2AzQW5cND4oLFg0U1M6PlRgVzs8WjBzYkE4bS9jaUJiXUpIcnI0SUNqZEExVztVUWQqWFFkKWUsTVxLZj5JaVFhISpWN2Q4QHQsXEYkaTo9bWpXWXI5WnQ+PyRWJ1xITkgtSFF1LlRnXVhQSEFLcTA8WlhdbG1wQStjNmNjQTIjIUFKbiFqSGJobVtRSjAuZkI1VDAlW1ZNTTxbTVhUOllcSU8jMzJRaWgpNldbS2M9dFBLcCReX2tdOVg+KEw/Li0iIVFSKEQsT0VVV2ZDcktcTCM8Z1RPWU0hUy9LXCwlKHUiOWcuKzVNXk0hPGosRlsxJ0osUCduUSk4cCkxMURuMyxmWT42OUFiLmU0TyE2KT9BY2knNE9pJyQka3VnXj4sX2MlMl1tViY6OmwjYHI7aWl1MU1rVTNKbWZKWFxIRlxEdDtTYjc+ciM+WTRsTjNuO2dSLWlAXC5eaDlbJkQ4dGwmXysqQjtvTyRlIiktODFTNjIsQ3M1YCUvIl4mNVwhRD9qT09JTmJvNCVBU0NURmJDJlBLMThHRipmXF5xMWluRlByI14yR1pTNUNHPF5DSVUpVUxZT1khPz4+SmxTbUhXYEFLVlRfYWJIWlRTYHVDISxXUWBQZlkjcWFhI0pAJVlAMzNPY2FycTQqXD4wVGFuaTdCMUZqVWVgMDklX1U0OyFbcGtfVVYoS21LUjhvT2lFKmRobEJiJnEpXFgtSkBTcTclQG4hI2MvTlwkXSksNCdVbEM5TTZuWCUyQ2g0OThQPFVFYF1AMl0sVFUyWDpGOTUkQSIpTjpXdDM/YEpyPDksKk5lbCs5R0QnMygrblMrLm8pJy9BYikuTz4jNVhIKSIhJUk0LjBJYmBWRXRBPDM0ZGBAR2hVMzgoOSleOD1NciMkMzohIj1IVGlOWmBsYTRsTEBDYGBkcHQwQ0FTMEc7OGUpS1JNQFlOcTZcNEQ0Sj9oXzlUbF4uXUA+PyleP0BnYFMsOEQ2VUshbk8jJyxIbzE1SV9zJyFnIXAraXU8L19oXVdDNkwsQl4sdS5CYE5ALjtkI1IiPWsiPHMsS0YyclpLbC8+LyhVYEEiRSkmWmRscmpBLTUiN2M7TDYoYFA4UW1Ea04nR0lsZE9yI0YnRV1LVUVcM1dFRTMqUzNiVGhFTFFMOCM2cz1aVjRtSGtZZF4wJHMsYic4M2xdV1MrTmZxLSxUY15Ta2w6RjooQmwucUs+UDNmXlBvL2wlQCk6PCVUTVI/QlMlTkFyRnBvRjU6WUNgQT4sU3ArI1VQMV5hMDJtWk9KQDRWLnU7LTVwQWpwQWNOb1wuMixePFYwaSs+OiFCTVkzPkMzInAoPGE+L2VdP1NTIUw9UU8hOTkrNjsxcHByXFs0P0daM1opcSFUKnRvZjRuJWNrRDtGODxISFAqKC4rQFc6cjJfJUlfKFpdWiQwQ11GXSwncVZLXm88YnU/WTJsNUM8Zio8NVw8b2FMJylBaCk1Vlp1VTwwZmVBTzZnNTlPczwjUz5mKi9rbEc+M1VZc01hZEJUcz9CUS9mVzUsXTAjclVjPVhkJzlNWHE8JVA/V25aaWdcQG9OQXMxLGdObmlaJjxRbD05cm8hLio+NTxXbSFCQTZPJzM9XDk/XEdPVk5sZzwtKVciKzYhU0BAcjg2aTQwSmRqZWQoMzdjQjRyalVlJWhrOC89PWZNYEpmbFhzY2VDX1BXKFtxPl1UaVtKViJOO1Y6Wm9TPmgyWWB0cllzYEBFYksvOyhvJEs6bzM1P1o+ajdiLFNQKmFFPkVLLUQjWkxCLTEyaDVMWk90J0QpO0hUOV1FXHRYTV1JW2ZvQFQxciVKME5GYEVWO0wuTUM3Lmg/IzM7XDBrXmJjVW8qUSkxSGdOcDJFUjwhPE84TkhIVTFbVzE9dFciRDZvREJfOjNmOW1rY0s5U1xXWkZfalEkbFVkXlBJMTkqWzBxQzE7YSEpVys4OV88ZjxvVUtyb1o2PU5RXypJXzgrXWxYMylTXyhiVjE/T0omPytHOWo9REQ+TicvNlFGN0VmcDouVUdHQnFDPnI3YTIpb2UsKlE2PWNbSiZqYyEqQGo6S2RoL2dpNkYqIiIwUVosOWE9JkpwajhgRF5XSFNfMUkvZm0qJCEpaiIyZz8iQydJUmZZWkRTSEZFNV9YQmdJVl0wLE9tIjwqLlg7RS9jJEVRPCo9SWlqc0pqX1JMKVMqIy1QMCVVTFhYTUJbNms5K0hFdFI6TVFNTkshKUBuVWs8VTZGOWxpP1AlUmJyYnE6Oko5VGZVSCQ0XixORylbNl5mYV9SPEluKltXSnAqLGlkJjs3TGJLQFxtcD4nPSMwYiU/R1NKKks2dGpWJ04oMHJGTypWKzM3QidmUG9hZF5TMG0lNjhAdGlOO09dbWpdSjdCWidySTdXQDI+PC5dQ2ZGTiZWImAjWmYobkEjX3BQYCRuPXEzaVRNInJhR2I1I2QvPEdlKmVxQzIvYiNqbmxRWWo9ZiQ3PmhHXSc+RE50Kj1TbCg5N2I0UVtOQFNFR3A1IlMkVTZcYFNBUyokbztjMmtxKSFEYjBdRlUuKzU5QkRkLWgvJkolQUdIKF86PWk0XlZlbEBmOFgsPiJHSXJyI21NXUlwYmZVI2hIM2hkNFtCQiwrNnJII1ZtYUxlaCxNJEwtXnFjOEtALEc/ZUhUcyIyS15OZkItcTYnUj83b1pmWzhxNWowcGZGRWFebV4+SGgqX2FBJUJnJFQnNURUb3NLUHNbSSt0JllvW3FVcDlDP0A7JTwrRkN1ODFUKFxNYW8qWGlyUyhnPSVxb28iLktubD9OLDA8NCFIX1MlZnJlVDNWM0dVbzlWYlswVS4rRlBCX1M3NmdTSGdFakhELC9vNz5lNkdGI1FTKVQ8LV0+Sl48a2hmbGciNTYwNkRaLkYtWWxmKjclWEhaOChra0UzLzhYLz50RkFMcHQ0TmYqODpSSTY2aipoQ0VrblYxMiRIbmtDPVgpbGVncFkkWVNTQjFjNCgpb09BVyhFTEpgXTFRKERrY0liMkJDTWdoV04xaSI4OVpzKlMuZmcpWEMhZ2UlcDY/cCRwN2RcKXVoRU1DbGhMM1U7JG1eNSlLQGI6MCFVb05TJUQwWThoLCkzUHM1PUFFSC5oUjBxJDUlXjkoIVA9TCEiNkFzWy5OcG03UC89K1FHTUJycFlFQ0pKP1xKVS5APlJSTzBSVXAmbmRLRiZBV3ApdW1PdGxgKkZbOSI0Q29INzRzM3FbJC0lJkwsZ3BtKUliMVVVW21pJS41TTw6SF9yRzpLXThOZydTUFpdNS88S2I7O2Y6OyZsXjlgJDE/VTpAIWUvY2w4OGA4VUM6NThLOH4+ZW5kc3RyZWFtCmVuZG9iagoxNyAwIG9iago8PAovRmlsdGVyIFsgL0FTQ0lJODVEZWNvZGUgL0ZsYXRlRGVjb2RlIF0gL0xlbmd0aCAyNjI3Cj4+CnN0cmVhbQpHYiEjXTk2OSxPJyMrNkVvSVdnMUsrTkZaM0kvWzlgMlFtZGBuIjBDXFxKbilGJWNXQjhRaG1pclVKVk9POydfK2JEcyNHbSc4MiVkRz1URURmVGdkUV5jPS4hO1AuS0lfRm1aPydyaWRxb2ppO0IsRkZpcl1YZ2UqNGV1SWJYaWVHS18uS1BdRUhDUVI1M05MLFtlLClLXDVIPU5mdDtQJCsiIWEkcVY3RVU2cjBoK2lyWEMjbG9sRE8kXVdcXE5DLSwyLWVISFc8MT9iZipjUlNHP0VxRSZQTk5rSiwiN1Eqb0ZnbElfdSdZY2NjM2QjQ3VnVUkoP20zaGJOK1lJcjtGLzVKdVAkOVJcXmRfTTFMOCorQlUlTzVVPlZAN0AqbTo6Ll84WTA2YF5hU3BuIkoyciNeWidWdGojWzldYShQUj1WaVZxOkRCLmc3c1Q/VFlBJixFaDY1aURPYCU1b0ZrNDwrcSonZTQrRjQ/bDcwJG4+cz9WMU5MXEtSOjZCamc9PHAzN286WUFAVkFsUXFJXjJiSjMlal5MRHRdWit1PmM8IyFjOSpOJ3QkbEA/blZpXiMmRS1qRV9VI2pMcyZQQ3VtTyRfXT5YNVYqWlEhT2RwRXBqRV9lTyspVSpEVyU4bU0lZGg0cWFwb1NbSzwrKjQsbURLPjZOInMmNVgpY2NVIUNLSF1dUWRpJ147X1QhRWI/O1smKCxYWCZPZylPNE4jLnArckdrbj5ZZVk3Z01WPWlpKXUyMi5HTmlDVTNxZjRtS2Elc0Q6JUtlRFp1QzBjYWZyWWFeXC4uQ2BLO1RMWmU0PlFmMTY0MF1uYl5zKXRjUDxQUycnN0tPNjMwWExEP2t1ZlVmaT1AO241MGE9XkFeTThPUTNTMDImXkgkJ2hVWDlbMFVNPCNXXHNNVmlEMGpKJXFkLW40XD44Z0A5LjpkSCI2QjszSzwyLkQtK1FPQUciS2hhNmdNJlNQJU1jLCVnQmwsaEI3JlU7cDsxa0dgKj82Sj0vZDM8WW4/biRrZTZWdEYiYkhPXF4kLClELC4yQyM7MlVJT0dhXTNvN2RxaTZCY1tpYSZpLiVgIWp0Q3JfYnRqOjZPPmZJXC5zYFdaPmkqS2d0JGd1U3I8JFc6SFtkTlltMkI7Wmg5ckxMWkVgI0xHXmQqZEkpVSJmMmIiZ2g8LFcjMkk8T2BJXmVxNFhoWllgKVJAWWlPNzo/NltEZ0dkOjJaYztcXDVfaHM3Ylg5azNkQz8zbyZpQE1oQDVgcjtIJVpSLCNOdWhfL240TlQnOkhZL1sqU1A7MWlkRyk/aWBTK3BwTSdUW0NKT3RbZ24+b1BFQ0ZkPnFVVyRccG5vJzVfTGhwJVYpQW1PXClRSFAzOzRyKFhAWnQqPSQsVTRgMCxMMW1FKDY+Yy5wOSw6LlxOI0BmWFBjQztPJz5eMV04W0BqTl05Klg/PS5UMTptJDdDcGJjNVZVKSMhK1llTkY+OTQjbmdwTFciZilrNyctXihsYS1oWm8mXVpoUk0oPmhUSSkiPUBIMj5NbTtfTFYiW1NhPCNFbnJZTlQ3Mi82KS40aS89cClGW2FOLTRJJnUkVkdMbEttbWBGUCorQGpLYjtmL0ZJQUNKN0A6W21uQ0taXElJVm1yLjM7PiYuNEVWTlhuJmtHbkNRITUrXCEiPTJQN11abzVwa3BAaz8tZy1jNEs4Z3VcMV9aR090JGZPJUk+ImJhXVlmbzNjdFgiZk8qUz4rSFM3ZWFwJDBpIm1vWEtLcldEPmBlOidlKElZPWhWZ0c1MlFTaGEwYjVOSEo0dFMyMjJjQTRlcW0mRDE5JTtDSz9qbGxJP0wpbmdIXG04UGI7YmVgKmphQClUSiM8KHUmQl5zIkAxQVsqJGtoZzsrWW1Fci5icT1kY2ZhNjsvP0AvQ2pzUUwuLTBuM1g1ZlRBPVdiQjNoLyZIcXBYb1ZUYTBgYTxNZ1A1UEsiK1Vmc1R0U3NlKUVWYCgzLzBBJChEOFBcRXArKFNBS1g/P3RbKjUnWkMlUVUmRm9uPytIVjkuISwmQm1hUChfO1QkR0hER2JZWzRUOCtKXkQjPz1RdW5vbCFnUjF1PCMzZShhIVdWQzRdPU8hNUFpaCZAbjRwT29mV2tQLFApcWdRZ1AqSTxjckxOLyQhJ0krVDM9R0BEI0ZZQ2AhYGVNK1VQS3I4NTJzaV0pRiUjJSk9ZyMkTDtGZlsqN1cxLSQ2Zz9UX1opQGNYTS1ydGlOKzVmXlArZTJXWGYzZldRcG1AJFI1LENKQExeZWY2PGRKbTMqKFpOZjtwaDVHZFMoJ2kuTytZP0U+VGAwc3RAUVplNWZONDFYZV1vMUgyY1kvTSo0WzFORTEjRz9KI0FkZ2hhYWRnYXReVmJBVV1SU2tzW2toUjdnbnJrSVl1JEVCQzAuKWMucEd0bk5hYF1sWkkwNFpPLEJnajM5YTVlQGxHLVc4PlNPYiMuZU4wPiU3R0UxWEpscUEkSXNhTzUzZSFUSFglV2JzNDVUYEMlTGNUVVkpW24zRC9pU1c5ODdkLHFtMCUmK25Ub0B0QS0qUlpna1ZPJisrPUYvalZZbGNRWVZhJzhPTDdRMC9oUC4tak5rKWcrNCpxXFBtczVeUShYUCNkVnMxRVIoajQhZjdBT110NS0xP1NFQ1MoW0glc2tnaVBwY0BvdCpATU5sV1gqPUIqJm9ZdT4kaXMnUVtBKzg7LWluWj1wJEIiNEBcVW1fTWRlPlB0KlotalwqYmtULihDU05jailbdEZhKjImSzdSJ0xOWlxOdSdVSkBIQVxNZFwnPT1JPmdrRD4kb1FLcTllXilBb0EkcG06MWxOYkdiLWpbMSdPKnRbJi9sIlJyJy5cS1ptaz4vT0Y+VWBoVDt1b11rMmM2WzIqW01TKS0pTmYxQnByY29iSzwuSEQuUjlbOjo3R2w4SFxcZWMydElhcSlhMktBU29MTzp1biYvSG4qPTpkWTFKIztuTm9cV2dBVEQkKUFoSCdBLzczImBlbVNFZS46V0pgTVVwaSdGa0daJlAxT1QuYVJbTzdpWFgwcWZJUT91byMiVV1JXFQ3NlFAJiZldT1rYlltYjkyIUNMaipGS24oXSprSjwvYXRKXWI/bj4oQzFVYVtvVypjPVZLayZRZiEwKz9hM1tGSEFdW3RETVNXO1o5Oi4nRmh1RyJFZDdnXmtFU0gvcTszVFIycDEhODthJz41VXIxTmIpZmonZWY+PG9sSDlZbU5ROFJeQS0jIywxLlU2TG9LIUc1amhuTSskb0JZKzBiV2VGLVE9azo8ZDBUQCZeQFI6W2gtTWNscCxiS01nQ2wtSV5vQV04W0syJkhTJl45Lms9bT1LMjhaT2taP0QlV2BEKy5GNF0kdSNFaTFrUW5LPUs9N2MzU0EkbTMvWWhhIWI9bG4nR2VnNHVIayxvK0ZOTWs8NFo+biEsKGRxJCtSOkI1bVEvJ1VzJER+PmVuZHN0cmVhbQplbmRvYmoKMTggMCBvYmoKPDwKL0ZpbHRlciBbIC9BU0NJSTg1RGVjb2RlIC9GbGF0ZURlY29kZSBdIC9MZW5ndGggMTgyMgo+PgpzdHJlYW0KR2F0bTw+QmVnWyUiP08rXnRaTW5RNG5EbWhVOUAsWkk6XDZqIkFaODcsKU5nZE0oa1k1JWQqLyEra3RoYGNnLnQ+U04pNCE7dTxlIk4mIW1Ec2o0OSUsZy5PSV80UlNJMklycExGZSwrQkJZQy9yamNFQylaKikvYmZgLD9gVWwrXkpkZ3FkS2xZcUMvN1ErM0wsQHNCOXNZT0shVFNBPzo4QUNMOF4oO0wnJC9LLCJUVjFVOkxdUVdwY09HKTFnSkAuPF5pTyhJTHRPT21dal0nJyxcdWVHQ01MOnBWNEtRNSUzKW5cL1xpNCI4aUJYXC9iNFdOOFcwb2dbImpCMF91OVNHPjspTDtBI1tZJ0ZpKW1LRnFSalU9NmgxRDssJ0pCNDhIUnJnQypLSC5yXFMrUy5UIkRAcDtDJnItZEtpTVIoL0h0WChgYnNBdUJwJXBGcS1rKUxjRCs2ImI1QFdtZ1c7JWVMX0FNWl1XImNXTiQ/Iz4+NmRhdDtCc3FqNWZxLEtjR09IWkgjYCxzVUltby5tVEl1KCEoQVVPXDZtNGEpIUlZIWxyJF1LTkIzcGgiclgyWGYjWT4nbVQtbzt0Y08mWj1iJFwzN2BGQzQ8PCw0IzdBNFFIcmxHRztDPyMwLEc8UWVIRW4xYUozTmY4UFBVR3AoQUAocjY7bj1iOEtsLFwqQzcpZzdMUVBgNlU3RU45R0JRMVQwRjdzRUBfYFxlW3JdMzsqSzJdXUhBdD4/LlRmSGxUOmldT3IvUChOUWg4ZGs/Xlwva2hPWzM6blM0aFxVKy4iMmhoOC9kPz9CJzFkRkBVUWchSTNCS2I/MTY2ciYydGVHZywxazgqWi1Sa2hTUVM5Mk8/WjZzLVpsIVJJTCtAcC5rbkM9UUpKXFtALERgR25rK2cvQHB1ZGJgTVInTW0iJjFYQlxmZWw9LzYjJDVKbkpMV1VFZkomTShASVpLXixxU11qTUhpR2JTb0FoMzszNC81MDQ/S3VjTD4uSFFGL0UkXylFVXNEYFs0dFVrMW43YTBIPWNbRy42SkVpSVw3TydqNjItXzMmJGk/Ij9YcVFqRi0jKXErKFxMPE1LYltWPysqZlRSTUBXUWUyWV0tNyJDLSlVKDEyRW5aKCtDXCkjLkorKicmPXM1cydjT0g9WThDKTpzIy00K1AuTDg9LFMnW1ExJGUzTSM6Xi9nalVSS1tIKmlGK1MxaGlMXC83bEM3T0lwOl9yMWxYY1FFVWRMYm0hVkE8PmE7Om1oQ3MwR2MpI1gyQms5UCUzOk5vRjFXIWJQIVRDJlRZOzAkVylxT0khX1JFayZlYjU6ODUoNGg+PFRQJ0pacTleUCs4ZzpGWVZGLkNgIllGPHBscEFoMldFMFdtRkZWdU1yRXAqKzhHZi9hYGE+c19gV2VLKy1QSm5jMFFJbnJvNEEtcGgpP2chV1chal9malJIXFNmY11lIiNYa21SQ1pLZUNQckBoQFBcX2MqZCxBXzojYDNIQmgzZWUqbGoibi1tZkFNT2piSypXIWFAbCwxZy9rOmp1Q1JlPmIrbm9tImJDJmc4U0RjcElDb2lvM0M4OUpZXjhPS3NDbltgWTtqWmRQdGtOcmxtOi8vbVZQKV9WaGJsISUmW19bdWVjKmBSPmI9b1MnQkJdOG1IPFJbdSlNJzU3YSEpQilhWU5rMzZtWzY0bF1jXkplcTBzJGNuUSchXGghRm5ZdEdXL05jXSMhXlotMSQhJFpccUVxSmdjWikoWXNgMClnR1VpWC1KNWprNFlTLjcvZz5hcVFkP3I9a11dXmRtLVIjKTs5YSg+dTUmVXFpaGknJyI1dTQ2bSYobUdRWjRdXSVvb0k+XVhiZitHOlw+NUNqbDovI2EjMSkwaz4maWBpRWAtRnNZWmVNVDRvckdpbixQNzU2YUFVYlRFayE6ND5sMnQnU1ZHL1FFRnBWN3NoNmIxcTdERGJ0QHNxbG1IKnFHVEhTP0EsPiQ8MztrI3QzMi5UXEY5Xz5xTDBmXzgzQTg3TFNfYjZcQl5cM2UncDwvSGFlYScoRCsiNC48SD5tX24/OGwxZCNZV1E0TlkiZSotLDx0MWBFVG1UYjp1OiZVZSw+LTxoXzRLZ2JbOG9jSV9eUl1UV1NuKmUkcyMuOkg/OUlnVSYzbSE0QF0lM2ZKKENwOVljQDpOTDg4XCM4JUkyaVYiTS1nPmI6J21eXUFnUVFNXzRtYlxNQiFoYHMxXys/SGlEMkJFLUcqMTNdQmFnPWVVY0tDQ01RTCdjakIzTVZuQVIvRGVKPWNVMCEmXiJsWlkzKXByJ0JMcV5VPTpVV0A4MmA6N0JRO0pHNC49TFFPYkxcZSVCYEFCKUdtJkVJanBVTkVNSFcxZjJdXDxLVDgic19dKDAvPyYyKnFlUXJkaVN+PmVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDE5CjAwMDAwMDAwMDAgNjU1MzUgZiAKMDAwMDAwMDA2MSAwMDAwMCBuIAowMDAwMDAwMTAyIDAwMDAwIG4gCjAwMDAwMDAyMDkgMDAwMDAgbiAKMDAwMDAwMDMyMSAwMDAwMCBuIAowMDAwMDAwNTI2IDAwMDAwIG4gCjAwMDAwMDA3MzEgMDAwMDAgbiAKMDAwMDAwMDkzNiAwMDAwMCBuIAowMDAwMDAxMTQxIDAwMDAwIG4gCjAwMDAwMDEzNDYgMDAwMDAgbiAKMDAwMDAwMTU1MSAwMDAwMCBuIAowMDAwMDAxNjIxIDAwMDAwIG4gCjAwMDAwMDE5MzQgMDAwMDAgbiAKMDAwMDAwMjAyNCAwMDAwMCBuIAowMDAwMDAzNzAyIDAwMDAwIG4gCjAwMDAwMDY0NTUgMDAwMDAgbiAKMDAwMDAwOTQxOSAwMDAwMCBuIAowMDAwMDEyMzk4IDAwMDAwIG4gCjAwMDAwMTUxMTcgMDAwMDAgbiAKdHJhaWxlcgo8PAovSUQgCls8NDQ5MjQ2MDllZTI5MDQ0ODFlNWVmZjZhZGIxMTM5Mzk+PDQ0OTI0NjA5ZWUyOTA0NDgxZTVlZmY2YWRiMTEzOTM5Pl0KJSBSZXBvcnRMYWIgZ2VuZXJhdGVkIFBERiBkb2N1bWVudCAtLSBkaWdlc3QgKG9wZW5zb3VyY2UpCgovSW5mbyAxMSAwIFIKL1Jvb3QgMTAgMCBSCi9TaXplIDE5Cj4+CnN0YXJ0eHJlZgoxNzAzMQolJUVPRgo=';
+// =====================================================================================================
+// v1.5: usage, controls, pairing, parent phone, edit and delete tools
+// =====================================================================================================
+function dayStr(d){ d=d||new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function lastDays(n){ const out=[], t=new Date(); t.setHours(12,0,0,0); for(let i=n-1;i>=0;i--) out.push(dayStr(new Date(t.getTime()-i*86400000))); return out; }
+function fmtMin(m){ m=Math.max(0,Math.round(m||0)); return m<60?m+'m':Math.floor(m/60)+'h '+String(m%60).padStart(2,'0')+'m'; }
+function ago(ts){ const s=Math.max(0,Math.round((Date.now()-ts)/1000)); return s<60?s+' s ago':s<3600?Math.round(s/60)+' min ago':s<86400?Math.round(s/3600)+' h ago':Math.round(s/86400)+' days ago'; }
+function downloadBlob(blob,name){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); }
+function dataUriBlob(uri,type){ const bin=atob(uri.split(',')[1]), arr=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i); return new Blob([arr],{type}); }
+
+// ---- usage ---------------------------------------------------------------------------------------------
+function usageDay(u,date){ date=date||dayStr(); u.usage=u.usage||{}; return u.usage[date]||(u.usage[date]={inApp:0,total:null,src:'app',apps:[]}); }
+function manualRows(u,date){ const by={}; (u.appLog||[]).forEach(a=>{ if(dayStr(new Date(a.ts))===date){ const key='manual:'+String(a.name).trim().toLowerCase(); by[key]=by[key]||{k:key,n:String(a.name).trim(),m:0}; by[key].m+=a.mins; } }); return Object.values(by); }
+function localDays(u){ const out={}; lastDays(7).forEach(date=>{ const d=(u.usage||{})[date]||{}, comp=d.src==='companion', inApp=Math.round((d.inApp||0)/60);
+  out[date]={total:comp?d.total:null,inApp,src:comp?'companion':'app',apps:comp?(d.apps||[]):[],appsApp:[{k:'__this_app__',n:'Screen Free Rewards (this app)',m:inApp}].concat(manualRows(u,date))}; }); return out; }
+function usageRecTotal(rec){ if(!rec) return {min:0,src:'app'}; if(rec.src==='companion'&&rec.total!=null) return {min:rec.total,src:'device'}; return {min:(rec.appsApp||[]).reduce((a,x)=>a+(x.m||0),0),src:'app'}; }
+function totalFor(u,date){ return usageRecTotal(localDays(u)[date]); }
+function pruneUsage(u){ Object.keys(u.usage||{}).sort().slice(0,-14).forEach(k=>delete u.usage[k]); }
+let _lastTick=Date.now(), _tickN=0;
+setInterval(()=>{ const now=Date.now(), dt=Math.min(5000,now-_lastTick); _lastTick=now;
+  try{ if(document.visibilityState!=='visible'||ctl().deviceLocked) return; const u=getU(); if(!u||!state.loggedIn) return;
+    if(!document.getElementById('childView').classList.contains('active')) return;
+    const d=usageDay(u); d.inApp=(d.inApp||0)+dt/1000; if(++_tickN%15===0){ pruneUsage(u); save(); }
+    const dev=state.device; if(dev&&dev.codeExpires&&document.getElementById('pairModal').classList.contains('active')) renderPairModal();
+  }catch(e){} },1000);
+
+// ---- controls (lock device, lock apps) -----------------------------------------------------------------
+function ctl(){ state.controls=state.controls||{rev:0,deviceLocked:false,message:'',lockedApps:{},by:''}; return state.controls; }
+function paired(){ return !!(state.device&&state.device.roomId&&state.device.secret); }
+function applyControls(){ const c=ctl(); document.getElementById('lockOverlay').classList.toggle('on',!!c.deviceLocked); document.getElementById('lockMsg').textContent=c.message||'Ask a parent to unlock this device.'; document.body.classList.toggle('is-locked',!!c.deviceLocked); }
+async function setControls(patch,by){
+  const c=Object.assign({},ctl(),patch); c.rev=(ctl().rev||0)+1; c.by=by||'parent'; state.controls=c; save(); applyControls(); renderApps();
+  if(paired()&&validMailUrl(mailUrl())){
+    try{ const r=await relayCall({action:'ctrl-set',roomId:state.device.roomId,secret:state.device.secret,controls:c,by:c.by}); state.controls=r.controls; state.controlsDirty=false; save(); applyControls(); renderApps(); }
+    catch(err){ state.controlsDirty=true; save(); toast('Saved on this device. Could not reach the sync link.'); }
+  }
+}
+window.toggleDeviceLock=()=>{ const el=document.getElementById('lockMsgIn'); const lock=!ctl().deviceLocked; setControls({deviceLocked:lock,message:lock&&el?el.value.trim():''},'parent'); logA(lock?'device_lock':'device_unlock',lock?'Device locked':'Device unlocked','parent'); toast(lock?'Device locked':'Device unlocked'); };
+window.toggleAppLock=k=>{ const la=Object.assign({},ctl().lockedApps); if(la[k]) delete la[k]; else la[k]=true; setControls({lockedApps:la},'parent'); logA(la[k]?'app_lock':'app_unlock',k,'parent'); };
+window.addControlApp=()=>{ const el=document.getElementById('ctlAdd'), v=(el.value||'').trim(); if(!v) return; const la=Object.assign({},ctl().lockedApps); la['manual:'+v.toLowerCase()]=true; el.value=''; setControls({lockedApps:la},'parent'); };
+document.getElementById('lockUnlock').onclick=()=>{ const pin=prompt('Parent PIN to unlock this device:'); if(pin===null) return; if(pin!==state.pin) return alert('Wrong PIN.'); setControls({deviceLocked:false,message:''},'parent PIN on the device'); logA('device_unlock','Unlocked with the parent PIN','parent'); };
+
+// ---- shared usage view (child device Apps tab and parent phone) ------------------------------------------
+function renderUsageHTML(days,c,h,info){
+  info=info||{}; const dates=lastDays(7), today=dates[dates.length-1], tot=usageRecTotal(days[today]), weekTot=dates.reduce((a,d)=>a+usageRecTotal(days[d]).min,0);
+  const by={}; dates.forEach(d=>{ const rec=days[d]; if(!rec) return; [].concat((rec.apps||[]).map(x=>Object.assign({tag:'device'},x)),(rec.appsApp||[]).map(x=>Object.assign({tag:x.k==='__this_app__'?'this app':'logged'},x))).forEach(x=>{ const o=by[x.k]=by[x.k]||{k:x.k,n:x.n,today:0,week:0,tag:x.tag}; o.week+=x.m||0; if(d===today) o.today+=x.m||0; }); });
+  Object.keys(c.lockedApps||{}).forEach(k=>{ if(!by[k]) by[k]={k,n:k.replace(/^manual:/,'').replace(/\b\w/g,m=>m.toUpperCase()),today:0,week:0,tag:'locked'}; });
+  const rows=Object.values(by).filter(r=>r.week>0||c.lockedApps[r.k]||r.k==='__this_app__').sort((a,b)=>b.today-a.today||b.week-a.week);
+  const lockedN=Object.keys(c.lockedApps||{}).length, comp=!!(days[today]&&days[today].src==='companion');
+  const bars=dates.map(d=>{ const m=usageRecTotal(days[d]).min; return {d,m}; }), mx=Math.max(30,...bars.map(x=>x.m));
+  const rowHtml=rows.map(r=>{ const locked=!!c.lockedApps[r.k], tag=r.tag==='device'?'On the phone':r.tag==='this app'?'This app':r.tag==='logged'?'Logged by a parent':'Added to controls';
+    return `<div class="app-row"><div><b>${esc(r.n)}</b><small>${tag}${locked?' · <span style="color:rgb(var(--neg));">locked</span>':''}</small></div><div class="app-time"><b>${fmtMin(r.today)}</b><small>${fmtMin(r.week)} in 7 days</small></div>${r.k==='__this_app__'?'<span class="empty">always on</span>':`<button class="btn small ${locked?'':'secondary'}" type="button" data-k="${esc(r.k)}" onclick="${h.app}(this.dataset.k)">${locked?'Unlock':'Lock'}</button>`}</div>`; }).join('');
+  return `<div class="stats"><div class="stat-card hot"><span class="k">Screen time today</span><b>${fmtMin(tot.min)}</b><small>${tot.src==='device'?'All apps on the phone':'This app and apps a parent logged'}</small></div><div class="stat-card"><span class="k">Last 7 days</span><b>${fmtMin(weekTot)}</b><small>${fmtMin(weekTot/7)} a day</small></div><div class="stat-card"><span class="k">Apps</span><b>${rows.length}</b><small>${lockedN} locked</small></div></div>
+${comp?'':`<div class="banner">The companion app is not connected, so only time in this app and apps a parent logs by hand can be shown. All apps and device-wide locking need the companion app on the child's phone (see the guide).</div>`}
+<div class="card"><h3>Device lock</h3><div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;"><div><b style="color:rgb(var(--${c.deviceLocked?'neg':'pos'}));">${c.deviceLocked?'Locked':'Unlocked'}</b>${c.deviceLocked&&c.message?' · '+esc(c.message):''}${c.by?`<small style="display:block;color:rgb(var(--muted));font-size:12px;">Last change by ${esc(c.by)}</small>`:''}</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;"><input id="${h.msgId}" placeholder="Message on the lock screen (optional)" style="width:240px;margin:0;" value="${esc(c.message||'')}"><button class="btn ${c.deviceLocked?'':'danger'}" type="button" onclick="${h.device}()">${c.deviceLocked?'Unlock device':'Lock device now'}</button></div></div>
+<p style="font-size:12.5px;color:rgb(var(--muted));margin:8px 0 0;">The lock covers Screen Free Rewards on the child's device straight away while the app is open. Locking the whole phone needs the companion app.</p>${info.stale?`<div class="banner">${info.stale}</div>`:''}</div>
+<div class="card"><h3>Apps today and in 7 days</h3>${rowHtml||'<div class="empty">No app time yet.</div>'}<div style="display:flex;gap:8px;margin-top:12px;"><input id="${h.addId}" placeholder="Add an app to lock (name or package)" style="margin:0;"><button class="btn secondary" type="button" onclick="${h.add}()">Add</button></div></div>
+<div class="card"><h3>Screen time, last 7 days</h3><div class="bars">${bars.map(x=>`<div class="bar"><i class="${x.m?'':'zero'}" style="height:${Math.max(3,x.m/mx*100)}%" title="${fmtMin(x.m)}"></i><em>${x.m}</em><span>${new Date(x.d+'T12:00:00').toLocaleDateString(undefined,{weekday:'short'})}</span></div>`).join('')}</div><p style="font-size:12px;color:rgb(var(--muted));margin:8px 0 0;">Minutes per day.</p></div>`;
+}
+function renderApps(){ const u=getU(), el=document.getElementById('appsBody'); if(!el||!u) return; if(el.contains(document.activeElement)&&document.activeElement.tagName==='INPUT') return; el.innerHTML=renderUsageHTML(localDays(u),ctl(),{device:'toggleDeviceLock',app:'toggleAppLock',add:'addControlApp',msgId:'lockMsgIn',addId:'ctlAdd'}); }
+
+// ---- sync (child device) ---------------------------------------------------------------------------------
+let _syncing=false;
+async function syncNow(){
+  if(!paired()||!validMailUrl(mailUrl())||_syncing) return null; _syncing=true;
+  try{
+    if(state.controlsDirty){ try{ const r0=await relayCall({action:'ctrl-set',roomId:state.device.roomId,secret:state.device.secret,controls:ctl(),by:ctl().by}); state.controls=r0.controls; state.controlsDirty=false; }catch(e){} }
+    const u=getU(), date=dayStr(), payload={action:'sync',roomId:state.device.roomId,secret:state.device.secret,date,name:u?u.name:undefined};
+    if(u){ const rec=localDays(u)[date]; payload.usage={date,src:'app',inApp:rec.inApp,apps:rec.appsApp}; }
+    const r=await relayCall(payload); state.device.lastSync=Date.now(); state.device.parents=r.parents||[];
+    if(r.controls&&!state.controlsDirty) state.controls=r.controls;
+    if(r.companion&&u){ const d=usageDay(u,date); d.total=r.companion.total; d.apps=r.companion.apps||[]; d.src='companion'; }
+    save(); applyControls(); updateUI(); if(document.getElementById('tab-apps').classList.contains('active')){ renderApps(); renderPair(); }
+    return r;
+  }catch(err){ if(/not paired/.test(err&&err.message||'')){ state.device=null; save(); renderPair(); } return null; }
+  finally{ _syncing=false; }
+}
+function startSync(){ if(window._syncT) return; window._syncT=setInterval(()=>{ if(document.visibilityState==='visible') syncNow(); },30000); document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') syncNow(); }); syncNow(); }
+
+// ---- pairing (child device) ------------------------------------------------------------------------------
+async function pairShow(){
+  if(!ensureMailLink()) return null; const u=getU(); state.device=state.device||{}; const dev=state.device; let r;
+  if(dev.roomId&&dev.secret){ try{ r=await relayCall({action:'pair-code',roomId:dev.roomId,secret:dev.secret}); }catch(e){ if(/not paired/.test(e.message)){ dev.roomId=dev.secret=null; } else throw e; } }
+  if(!(dev.roomId&&dev.secret)){ r=await relayCall({action:'pair-start',childName:u?u.name:'Child'}); dev.roomId=r.roomId; dev.secret=r.secret; }
+  dev.code=r.code; dev.codeExpires=r.expires; if(r.parents) dev.parents=r.parents; save(); renderPair(); startSync(); syncNow(); return r;
+}
+window.pairShow=pairShow;
+function renderPairModal(){ const dev=state.device||{}, left=dev.codeExpires?Math.max(0,Math.floor((dev.codeExpires-Date.now())/1000)):0; document.getElementById('pairModalCode').textContent=dev.code||'----'; document.getElementById('pairModalLeft').textContent=left?'Expires in '+Math.floor(left/60)+':'+String(left%60).padStart(2,'0'):'This code has expired. Open Parent controls, Apps, to make a new one.'; }
+async function showPairModal(){ try{ await pairShow(); renderPairModal(); document.getElementById('pairModal').classList.add('active'); }catch(err){ toast('Could not create a pairing code. Try again in Parent controls, Apps.'); } }
+document.getElementById('pairModalDone').onclick=()=>document.getElementById('pairModal').classList.remove('active');
+function renderPair(){
+  const el=document.getElementById('pairBox'); if(!el) return; const dev=state.device||{};
+  if(!validMailUrl(mailUrl())){ el.innerHTML='<div class="empty">Connecting parent phones needs the sync link. The app owner adds it once (apps-script/SETUP.md).</div>'; return; }
+  const has=paired(), left=has&&dev.codeExpires?Math.max(0,Math.floor((dev.codeExpires-Date.now())/1000)):0, ps=dev.parents||[];
+  el.innerHTML=(has&&left>0?`<div class="pair-code">${esc(dev.code)}</div><div class="empty">On the parent's phone choose My phone (parent) and type this code. Expires in ${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}.</div>`:'')
+   +(has?`<div class="item">Parent phones connected: <b>${ps.length}</b>${ps.length?' ('+ps.map(esc).join(', ')+')':''}${dev.lastSync?`<small style="display:block;color:rgb(var(--muted));">Last sync ${ago(dev.lastSync)}</small>`:''}</div>`:'')
+   +`<div class="row-actions"><button class="btn" type="button" onclick="pairShow().catch(e=>alert('Could not create a code: '+(e&&e.message||'offline')))">${has?'Show a new pairing code':'Show pairing code'}</button>${has?'<button class="btn secondary" type="button" onclick="unpairAll()">Disconnect all parent phones</button><button class="btn secondary" type="button" onclick="copyCompanion()">Copy companion setup</button>':''}</div>`;
+}
+window.copyCompanion=async()=>{ if(!paired()) return; const info=JSON.stringify({link:mailUrl(),roomId:state.device.roomId,secret:state.device.secret}); try{ await navigator.clipboard.writeText(info); toast('Companion setup copied. Keep it private.'); }catch(e){ prompt('Copy this setup text for the companion app. Keep it private.',info); } };
+window.unpairAll=async()=>{ if(!confirm('Disconnect all parent phones? They will stop seeing this device and you can pair them again with a new code.')) return; try{ if(paired()) await relayCall({action:'unpair',roomId:state.device.roomId,secret:state.device.secret}); }catch(e){} state.device=null; save(); renderPair(); toast('Parent phones disconnected'); };
+
+// ---- parent phone (remote console) -----------------------------------------------------------------------
+let rmData=null, rmBusy=false, rmErr=null;
+function rmRoom(){ const rs=state.rooms||[]; return rs.find(r=>r.roomId===state.remoteActive)||rs[0]||null; }
+async function rmPull(){
+  const room=rmRoom(); if(!room||rmBusy) return; rmBusy=true;
+  try{ const r=await relayCall({action:'sync-pull',roomId:room.roomId,secret:room.secret}); rmData=r; rmErr=null; room.childName=r.childName||room.childName; save(); }
+  catch(err){ rmErr=err; if(/not paired/.test(err&&err.message||'')) room.gone=true; }
+  finally{ rmBusy=false; renderRemote(); }
+}
+function renderRemote(){
+  const room=rmRoom(); if(!room) return; document.getElementById('rmChild').textContent=room.childName||'Your child';
+  const pick=document.getElementById('rmPick'); pick.innerHTML=(state.rooms||[]).map(r=>`<option value="${esc(r.roomId)}"${r.roomId===room.roomId?' selected':''}>${esc(r.childName||'Child')}</option>`).join(''); pick.style.display=(state.rooms||[]).length>1?'':'none';
+  const body=document.getElementById('rmBody'); if(body.contains(document.activeElement)&&document.activeElement.tagName==='INPUT') return;
+  if(room.gone){ body.innerHTML='<div class="banner">This device was disconnected by the child\'s device. Use Disconnect, then connect again with a new code.</div>'; return; }
+  if(!rmData){ body.innerHTML=rmErr?`<div class="banner">Cannot reach the sync link (${esc(rmErr.message)}). Retrying every 30 seconds.</div>`:'<div class="empty">Loading...</div>'; return; }
+  const seen=rmData.seen, stale=!seen?'The child\'s device has not synced yet.':(Date.now()-seen>10*60000?`Last seen ${ago(seen)}. The app may be closed on the child's device, so a new lock applies the next time it opens.`:'');
+  body.innerHTML=`<div class="banner" style="${stale?'':'background:rgb(var(--pos) / .1);border-color:rgb(var(--pos) / .4);'}">${seen?(stale||'Connected. Last seen '+ago(seen)+'.'):stale}</div>`+(rmErr?`<div class="banner">Cannot reach the sync link right now: ${esc(rmErr.message)}.</div>`:'')+renderUsageHTML(rmData.usage||{},rmData.controls||{lockedApps:{}},{device:'rmToggleDevice',app:'rmToggleApp',add:'rmAddApp',msgId:'rmMsgIn',addId:'rmAdd2'},{});
+}
+async function rmSet(patch){ const room=rmRoom(); if(!room||!rmData) return; const c=Object.assign({},rmData.controls||{lockedApps:{}},patch);
+  try{ const r=await relayCall({action:'ctrl-set',roomId:room.roomId,secret:room.secret,controls:c,by:'parent phone'}); rmData.controls=r.controls; renderRemote(); toast(r.controls.deviceLocked?'Lock sent to the child\'s device':'Controls updated'); }
+  catch(err){ alert('Could not send: '+(err&&err.message||'offline')); } }
+window.rmToggleDevice=()=>{ const el=document.getElementById('rmMsgIn'); const lock=!(rmData.controls||{}).deviceLocked; rmSet({deviceLocked:lock,message:lock&&el?el.value.trim():''}); };
+window.rmToggleApp=k=>{ const la=Object.assign({},(rmData.controls||{}).lockedApps||{}); if(la[k]) delete la[k]; else la[k]=true; rmSet({lockedApps:la}); };
+window.rmAddApp=()=>{ const el=document.getElementById('rmAdd2'), v=(el.value||'').trim(); if(!v) return; const la=Object.assign({},(rmData.controls||{}).lockedApps||{}); la['manual:'+v.toLowerCase()]=true; el.value=''; rmSet({lockedApps:la}); };
+function startRemote(){ rmData=null; rmErr=null; renderRemote(); rmPull(); if(!window._rmT){ window._rmT=setInterval(()=>{ if(document.visibilityState==='visible'&&state.role==='parent') rmPull(); },30000); } }
+document.getElementById('rmRefresh').onclick=()=>rmPull();
+document.getElementById('rmPick').onchange=e=>{ state.remoteActive=e.target.value; save(); startRemote(); };
+document.getElementById('rmGuide').onclick=()=>downloadGuide();
+document.getElementById('rmAdd').onclick=()=>{ state.role=null; save(); document.getElementById('setupMode').querySelector('[data-m="parent"]').click(); show('setupView'); };
+document.getElementById('rmDisconnect').onclick=()=>{ const room=rmRoom(); if(!room||!confirm('Disconnect from '+(room.childName||'this child')+'? You can connect again with a new code from the child\'s device.')) return; state.rooms=state.rooms.filter(r=>r!==room); state.remoteActive=null; if(!state.rooms.length){ state.role=null; show('setupView'); } else startRemote(); save(); };
+document.getElementById('setupMode').addEventListener('click',e=>{ const b=e.target.closest('button[data-m]'); if(!b) return; document.querySelectorAll('#setupMode button').forEach(x=>x.classList.toggle('on',x===b)); const parent=b.dataset.m==='parent'; document.getElementById('connectCard').style.display=parent?'':'none'; document.getElementById('familyCard').style.display=parent?'none':''; });
+document.getElementById('doConnect').onclick=async()=>{
+  const name=document.getElementById('cName').value.trim()||'Parent', code=document.getElementById('cCode').value.trim(); if(code.replace(/[^A-Za-z0-9]/g,'').length!==8) return alert('Type the 8-character pairing code shown on the child\'s device.');
+  if(!ensureMailLink()) return;
+  try{ const r=await relayCall({action:'pair-join',code,parentName:name}); state.role='parent'; state.rooms=(state.rooms||[]).filter(x=>x.roomId!==r.roomId); state.rooms.push({roomId:r.roomId,secret:r.secret,childName:r.childName}); state.remoteActive=r.roomId; save(); show('remoteView'); startRemote(); toast('Connected to '+r.childName); }
+  catch(err){ alert('Could not connect: '+(err&&err.message||'offline')); } };
+
+// ---- edit and delete tools ---------------------------------------------------------------------------------
+let editCtx=null;
+function openEditor(o){ editCtx=o; const box=document.getElementById('editFields'); document.getElementById('editTitle').textContent=o.title;
+  box.innerHTML=o.fields.map(f=>{ const lab=`<label for="ef-${f.id}" style="font-size:12px;color:rgb(var(--muted));display:block;margin-top:8px;">${esc(f.label)}</label>`;
+    if(f.type==='select') return lab+`<select id="ef-${f.id}">${f.options.map(op=>`<option value="${esc(op[0])}"${String(op[0])===String(f.value)?' selected':''}>${esc(op[1])}</option>`).join('')}</select>`;
+    return lab+`<input id="ef-${f.id}" type="${f.type||'text'}" value="${esc(f.value==null?'':f.value)}" placeholder="${esc(f.placeholder||'')}" autocomplete="off"${f.type==='number'?' inputmode="decimal"':''}>`; }).join('');
+  document.getElementById('editSave').textContent=o.saveLabel||'Save'; const del=document.getElementById('editDelete'); del.style.display=o.onDelete?'':'none'; del.textContent=o.deleteLabel||'Delete';
+  document.getElementById('editModal').classList.add('active'); const first=box.querySelector('input,select'); if(first) first.focus(); }
+function closeEditor(){ document.getElementById('editModal').classList.remove('active'); editCtx=null; }
+document.getElementById('editSave').onclick=()=>{ if(!editCtx) return; const v={}; editCtx.fields.forEach(f=>{ v[f.id]=document.getElementById('ef-'+f.id).value.trim(); }); const err=editCtx.onSave(v); if(err){ alert(err); return; } closeEditor(); };
+document.getElementById('editDelete').onclick=()=>{ if(!editCtx||!editCtx.onDelete) return; if(!confirm(editCtx.confirm||'Delete this? This cannot be undone.')) return; editCtx.onDelete(); closeEditor(); };
+document.getElementById('editCancel').onclick=closeEditor;
+function refreshAll(){ save(); renderParent(); updateUI(); renderApps(); renderData(); if(document.getElementById('tab-recon').classList.contains('active')) renderRecon(); }
+window.editTask=id=>{ const u=getU(), t=(u.tasks||[]).find(x=>x.id===id); if(!t) return;
+  openEditor({title:'Edit task',fields:[{id:'title',label:'Task',value:t.title},{id:'pts',label:'Points',type:'number',value:t.pts},{id:'status',label:'Status',type:'select',value:t.status||'open',options:[['open','Open'],['done','Done']]}],
+    onSave:v=>{ const p=parseInt(v.pts); if(!v.title) return 'Enter a task.'; if(!(p>0)) return 'Points must be 1 or more.'; t.title=v.title; t.pts=p; t.status=v.status; logA('task_edit',t.title,'parent'); refreshAll(); },
+    onDelete:()=>{ u.tasks=u.tasks.filter(x=>x.id!==id); logA('task_delete',t.title,'parent'); refreshAll(); }}); };
+window.editReward=id=>{ const u=getU(), r=(u.rewards||[]).find(x=>x.id===id); if(!r) return;
+  openEditor({title:'Edit reward',fields:[{id:'name',label:'Reward',value:r.name},{id:'cost',label:'Point cost',type:'number',value:r.cost},{id:'desc',label:'What they get',value:r.desc||''}],
+    onSave:v=>{ const c=parseInt(v.cost); if(!v.name) return 'Enter a name.'; if(!(c>0)) return 'The cost must be 1 or more.'; r.name=v.name; r.cost=c; r.desc=v.desc; logA('reward_edit',r.name,'parent'); refreshAll(); },
+    onDelete:()=>{ u.rewards=u.rewards.filter(x=>x.id!==id); logA('reward_delete',r.name,'parent'); refreshAll(); }}); };
+window.editSchedule=i=>{ const s=state.schedules[i]; if(!s) return;
+  openEditor({title:'Edit earning window',fields:[{id:'day',label:'Days',type:'select',value:s.day,options:[['weekday','Weekdays'],['weekend','Weekends'],['all','Every day']]},{id:'from',label:'From',type:'time',value:s.from},{id:'to',label:'To',type:'time',value:s.to}],
+    onSave:v=>{ if(!v.from||!v.to) return 'Choose both times.'; s.day=v.day; s.from=v.from; s.to=v.to; logA('schedule_edit',s.day+' '+s.from+'-'+s.to,'parent'); refreshAll(); },
+    onDelete:()=>{ state.schedules.splice(i,1); logA('schedule_delete',s.day+' '+s.from+'-'+s.to,'parent'); refreshAll(); }}); };
+window.editChild=id=>{ const c=state.users.find(x=>x.id===id); if(!c) return;
+  openEditor({title:'Edit child',fields:[{id:'name',label:'Name',value:c.name},{id:'age',label:'Age',type:'number',value:c.age||''},{id:'pin',label:'New child PIN (leave empty to keep, 4 to 8 digits)',type:'password',value:''}],
+    onSave:v=>{ if(!v.name) return 'Enter a name.'; if(v.pin){ if(!/^\d{4,8}$/.test(v.pin)) return 'The PIN must be 4 to 8 digits.'; if(v.pin===state.pin) return 'Use a different PIN from the parent PIN.'; c.pin=v.pin; } c.name=v.name; c.age=parseInt(v.age)||c.age; logA('child_edit',c.name,'parent'); refreshAll(); },
+    onDelete:()=>{ if(state.users.length<2){ alert('This is the only child. Add another child first, or use Data, Erase everything.'); return; } state.users=state.users.filter(x=>x.id!==id); if(state.active===id) state.active=state.users[0].id; logA('child_delete',c.name,'parent'); refreshAll(); },
+    confirm:'Delete '+c.name+' and all of their points, tasks, rewards, requests and history? This cannot be undone.'}); };
+window.deleteRequest=id=>{ const u=getU(), q=(u.requests||[]).find(x=>x.id===id); if(!q) return; if(q.status==='pending'&&q.kind==='redeem'&&!confirm('This redeem request is still waiting. Deleting it will refund '+q.cost+' points. Continue?')) return; if(q.status!=='pending'&&!confirm('Delete this request from the list?')) return;
+  if(q.status==='pending'&&q.kind==='redeem') u.balance=(u.balance||0)+q.cost; u.requests=u.requests.filter(x=>x.id!==id); logA('request_delete',q.name,'parent'); refreshAll(); };
+window.editAppLog=ts=>{ const u=getU(), a=(u.appLog||[]).find(x=>x.ts===ts); if(!a) return;
+  openEditor({title:'Edit logged app time',fields:[{id:'name',label:'App',value:a.name},{id:'mins',label:'Minutes',type:'number',value:a.mins}],
+    onSave:v=>{ const m=parseInt(v.mins); if(!v.name) return 'Enter the app name.'; if(!(m>0)) return 'Minutes must be 1 or more.'; a.name=v.name; a.mins=m; logA('app_log_edit',a.name,'parent'); refreshAll(); },
+    onDelete:()=>{ u.appLog=u.appLog.filter(x=>x.ts!==ts); logA('app_log_delete',a.name,'parent'); refreshAll(); }}); };
+window.deleteSession=id=>{ const u=getU(); if(!confirm('Delete this session from the history? Points already earned stay as they are. Use Adjust points to change the balance.')) return; u.sessions=(u.sessions||[]).filter(x=>x.id!==id); logA('session_delete','session '+id,'parent'); refreshAll(); };
+window.deleteLog=ts=>{ state.log=state.log.filter(l=>l.ts!==ts); refreshAll(); };
+document.getElementById('clearLog').onclick=()=>{ if(!confirm('Clear the whole activity log?')) return; state.log=[]; refreshAll(); toast('Activity log cleared'); };
+document.getElementById('adjBtn').onclick=()=>{ const u=getU(), amt=parseInt(document.getElementById('adjAmt').value), why=document.getElementById('adjWhy').value.trim(); if(!amt) return alert('Enter the points to add or remove, for example 20 or -10.'); if(!why) return alert('Add a short reason.');
+  u.balance=Math.max(0,(u.balance||0)+amt); logA('points_adjust',(amt>0?'+':'')+amt+' for '+u.name+': '+why,'parent'); document.getElementById('adjAmt').value=''; document.getElementById('adjWhy').value=''; refreshAll(); toast('Points updated: '+Math.floor(u.balance)+' now'); };
+document.getElementById('pinChange').onclick=()=>{ const o=document.getElementById('pinOld').value, n=document.getElementById('pinNew').value; if(o!==state.pin) return alert('The current PIN is not right.'); if(!/^\d{4,8}$/.test(n)) return alert('The new PIN must be 4 to 8 digits.'); if(state.users.some(x=>x.pin===n)) return alert('Use a PIN that no child uses.'); state.pin=n; logA('pin_change','Parent PIN changed','parent'); save(); document.getElementById('pinOld').value=document.getElementById('pinNew').value=''; toast('Parent PIN changed'); };
+function exportData(){ const c=JSON.parse(JSON.stringify(state)); if(c.device) delete c.device.secret; (c.rooms||[]).forEach(r=>delete r.secret); if(c.parent) delete c.parent.tokens; return c; }
+document.getElementById('dlData').onclick=()=>{ downloadBlob(new Blob([JSON.stringify(exportData(),null,2)],{type:'application/json'}),'screen-free-rewards_my-data_'+dayStr()+'.json'); toast('Data file saved'); };
+document.getElementById('eraseAll').onclick=async()=>{ if(!confirm('Erase everything on this device? Children, points, history and settings are deleted and the parent phones are disconnected. This cannot be undone.')) return; const pin=prompt('Enter the parent PIN to confirm.'); if(pin===null) return; if(pin!==state.pin) return alert('Wrong PIN.');
+  try{ if(paired()&&validMailUrl(mailUrl())) await relayCall({action:'unpair',roomId:state.device.roomId,secret:state.device.secret}); }catch(e){} try{ localStorage.removeItem('sfr4'); }catch(e){} location.href=location.pathname; };
+window.downloadGuide=()=>{ downloadBlob(dataUriBlob(GUIDE_PDF,'application/pdf'),'screen-free-rewards_parent-guide_v'+APP_VERSION+'.pdf'); toast('Guide saved'); };
+document.getElementById('dlGuide').onclick=()=>downloadGuide();
+function renderData(){ const u=getU(); if(!u) return;
+  document.getElementById('dataSessions').innerHTML=(u.sessions||[]).slice(0,20).map(s=>`<div class="item" style="display:flex;justify-content:space-between;gap:8px;align-items:center;"><span>${new Date(s.start).toLocaleString()} · ${Math.round((s.end-s.start)/60000)} min · +${s.pts} pts</span><button class="btn secondary small" type="button" onclick="deleteSession(${s.id})">Delete</button></div>`).join('')||'<div class="empty">No sessions yet.</div>';
+  document.getElementById('dataLog').innerHTML=state.log.slice(0,30).map(l=>`<div class="item" style="display:flex;justify-content:space-between;gap:8px;align-items:center;"><span><b>${esc(String(l.t).replace(/_/g,' '))}</b> · ${esc(l.d)}<small style="display:block;color:rgb(var(--muted));">${new Date(l.ts).toLocaleString()}</small></span><button class="btn secondary small" type="button" onclick="deleteLog(${l.ts})">Delete</button></div>`).join('')||'<div class="empty">The activity log is empty.</div>'; }
+
+// direct delete buttons (with confirmation) next to every Edit button
+window.delTask=id=>{ const u=getU(), t=(u.tasks||[]).find(x=>x.id===id); if(!t||!confirm('Delete the task "'+t.title+'"?')) return; u.tasks=u.tasks.filter(x=>x.id!==id); logA('task_delete',t.title,'parent'); refreshAll(); };
+window.delReward=id=>{ const u=getU(), r=(u.rewards||[]).find(x=>x.id===id); if(!r||!confirm('Delete the reward "'+r.name+'"?')) return; u.rewards=u.rewards.filter(x=>x.id!==id); logA('reward_delete',r.name,'parent'); refreshAll(); };
+window.delSchedule=i=>{ const s=state.schedules[i]; if(!s||!confirm('Delete this earning window?')) return; state.schedules.splice(i,1); logA('schedule_delete',s.day+' '+s.from+'-'+s.to,'parent'); refreshAll(); };
+window.delChild=id=>{ const c=state.users.find(x=>x.id===id); if(!c) return; if(state.users.length<2){ alert('This is the only child. Add another child first, or use Data, Erase everything.'); return; } if(!confirm('Delete '+c.name+' and all of their points, tasks, rewards, requests and history? This cannot be undone.')) return; state.users=state.users.filter(x=>x.id!==id); if(state.active===id) state.active=state.users[0].id; logA('child_delete',c.name,'parent'); refreshAll(); };
+window.delAppLog=ts=>{ const u=getU(), a=(u.appLog||[]).find(x=>x.ts===ts); if(!a||!confirm('Delete this logged app time?')) return; u.appLog=u.appLog.filter(x=>x.ts!==ts); logA('app_log_delete',a.name,'parent'); refreshAll(); };
 load();
 const DEMO=/[?&]demo=1/.test(location.search);
 if(!state.users.length && DEMO){
@@ -1034,9 +1307,10 @@ if(!state.users.length && DEMO){
   state.schedules=[{day:'weekday',from:'16:00',to:'21:00'}];
   save();
 }
-importMailHash();
-if(!state.users.length) show('setupView');
-else if(state.loggedIn && state.active){ show('childView'); startLoop(); } else show('loginView');
+importMailHash(); applyControls();
+if(state.role==='parent' && (state.rooms||[]).length){ show('remoteView'); startRemote(); }
+else if(!state.users.length) show('setupView');
+else { if(state.loggedIn && state.active){ show('childView'); startLoop(); } else show('loginView'); startSync(); }
 
 </script>
 </body>

@@ -12,6 +12,8 @@ Open [index.html](index.html) in a browser. No install step. It is always the la
 |---|---|
 | `index.html`, `public/screen-free.html` | Latest app (same file) |
 | `releases/app/` | Every app version, never edited after release |
+| `releases/guide/` | Parent guide PDF (dark and light) |
+| `docs/` | Companion app interface and platform notes |
 | `releases/email/` | Sample daily summary email (HTML, text, preview image) and the PDF report in dark and light |
 | `apps-script/` | Mail link script and setup steps |
 | `tools/` | Optional Python script that draws the same PDF |
@@ -34,3 +36,14 @@ Parent PIN defaults to `1234`. In Profile, add both parents' name, email, and mo
 This is a product: each parent installs it on their child's device and sets their own email. On first start the app asks for the family details (parent and optional second parent email, parent PIN, child name, child PIN) and confirms each parent's email once with a 6-digit code. After that every notification goes to that family's emails only: points earned, tasks completed, reward and redeem requests, and a daily summary with a PDF report. Parents can switch off the points and task emails under Profile.
 
 Emails are sent by one mail relay that the app owner runs (about 5 minutes to set up, then every customer works with no setup): see [apps-script/SETUP.md](apps-script/SETUP.md). `tools/bake_mail_link.py` makes the customer build with the relay link built in. Open any build with `?demo=1` to see sample data.
+
+## Screen time, app tracking and remote lock
+
+- The child sees **Screen time today** under the timer. It counts time in this app plus apps a parent logs by hand. With the native companion it is every app on the phone.
+- Parent controls, **Apps**: screen time today and for 7 days, the app list with Lock buttons, a device lock with a message, and the pairing code.
+- **One-time pairing:** show the code on the child's device, type it on the parent's phone (choose My phone (parent)). The parent phone then shows the child's screen time and can lock the device or apps from anywhere.
+- A web app cannot see other apps or lock the whole phone. That needs a native companion app. What works now and what needs the companion is in the guide and in [docs/COMPANION.md](docs/COMPANION.md), which also defines the interface the companion plugs into. `tools/companion-simulator.mjs` demonstrates it.
+
+## Edit and delete everything
+
+Every task, reward, earning window, child, request, logged app time, session and log entry has Edit and Delete. **Data** also has Adjust points, Change parent PIN, Download my data, Erase everything, and the parent guide PDF (also in `releases/guide/`).
