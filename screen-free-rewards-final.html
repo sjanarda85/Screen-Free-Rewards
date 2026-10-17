@@ -171,7 +171,15 @@ input, select, textarea {
       <div style="margin-top:12px;font-size:13px;">
         <span style="color:var(--gold);cursor:pointer;" id="showSignup">Create account</span>
         · <span style="color:var(--gold);cursor:pointer;" id="showForgot">Forgot PIN</span>
+        · <span style="color:var(--gold);cursor:pointer;" id="showParentLogin">Parent sign in</span>
       </div>
+    </div>
+    <div id="parentLoginForm" style="display:none;">
+      <p class="sub" style="margin-bottom:10px;">Opens parent controls only. The child timer stays locked.</p>
+      <input type="email" id="plEmail" placeholder="Parent email">
+      <input type="password" id="plPass" placeholder="Parent password">
+      <button class="btn" id="doParentLogin" style="width:100%;margin-top:8px;">Open parent controls</button>
+      <div style="margin-top:8px;font-size:13px;color:var(--gold);cursor:pointer;" id="backLogin3">Back</div>
     </div>
     <div id="signupForm" style="display:none;">
       <input type="text" id="suName" placeholder="Child name">
@@ -270,6 +278,9 @@ input, select, textarea {
       <input id="pName" placeholder="Parent name">
       <input id="pEmail" type="email" placeholder="Email">
       <input id="pPhone" placeholder="Mobile">
+      <input id="pPass" type="password" placeholder="Parent password (default PIN 1234)">
+      <p style="font-size:12px;color:var(--muted);margin:8px 0;">The first request emails an Activate link from FormSubmit. Tap it once. After that, both parents get the request by email. Phone alerts work on this device after you allow them.</p>
+      <button class="btn secondary" id="enableNotes" type="button">Allow phone alerts</button>
       <h3 style="margin-top:16px;">Second parent</h3>
       <p style="font-size:12px;color:var(--muted);margin-bottom:8px;">Use this when both parents are at work. Every child request is filed for both, and a ready email opens to both addresses.</p>
       <input id="pName2" placeholder="Second parent name">
@@ -410,7 +421,22 @@ document.getElementById('doSignup').onclick=()=>{
 };
 document.getElementById('showForgot').onclick=()=>{document.getElementById('loginForm').style.display='none'; document.getElementById('forgotForm').style.display='block';};
 document.getElementById('doReset').onclick=()=>{ if(document.getElementById('forgotPin').value===state.pin) show('parentView'); else alert('Wrong PIN'); };
-['backLogin','backLogin2'].forEach(id=>document.getElementById(id).onclick=()=>{document.getElementById('signupForm').style.display='none'; document.getElementById('forgotForm').style.display='none'; document.getElementById('loginForm').style.display='block';});
+document.getElementById('showParentLogin').onclick=()=>{ document.getElementById('loginForm').style.display='none'; document.getElementById('signupForm').style.display='none'; document.getElementById('forgotForm').style.display='none'; document.getElementById('parentLoginForm').style.display='block'; };
+document.getElementById('doParentLogin').onclick=()=>{
+  const email=document.getElementById('plEmail').value.trim();
+  const pass=document.getElementById('plPass').value;
+  const expected=(state.parent&&state.parent.password)||state.pin||'1234';
+  if(pass!==expected) return alert('Wrong parent password. Until you change it, use the PIN 1234.');
+  state.parent=state.parent||{};
+  if(email){ if(!state.parent.email) state.parent.email=email; else if(state.parent.email!==email && state.parent.email2!==email) state.parent.email2=email; }
+  state.loggedIn=true;
+  if(!state.active && state.users[0]) state.active=state.users[0].id;
+  save();
+  logA('parent_login', email||'parent', 'parent');
+  show('parentView');
+  renderParent();
+};
+['backLogin','backLogin2','backLogin3'].forEach(id=>document.getElementById(id).onclick=()=>{document.getElementById('signupForm').style.display='none'; document.getElementById('forgotForm').style.display='none'; document.getElementById('parentLoginForm').style.display='none'; document.getElementById('loginForm').style.display='block';});
 
 document.getElementById('toggleBtn').onclick=()=>{
   const u=getU(); if(!u) return;
@@ -469,7 +495,7 @@ function renderRecon(){
   document.getElementById('reconSummary').innerHTML=`<div>Scheduled today: <b>${scheduled} min</b></div><div>Actual timer: <b>${actual} min</b></div><div>Unused: <b>${Math.max(0,scheduled-actual)} min</b></div>`;
   document.getElementById('appLogList').innerHTML=(u.appLog||[]).slice(0,15).map(a=>`<div class="item">${new Date(a.ts).toLocaleString()} — ${a.name} (${a.mins} min)</div>`).join('')||'<div class="item">None logged</div>';
 }
-function esc(s){ return String(s??'').replace(/[&<>"']/g, c => ({'&':'&','<':'<','>':'>','"':'"',"'":'&#39;'}[c])); }
+function esc(s){ return String(s??'').replace(/[&<>"']/g, function(c){ return {'&':'\u0026amp;','<':'\u0026lt;','>':'\u0026gt;','"':'\u0026quot;',"'":'\u0026#39;'}[c]; }); }
 function parentContacts(){
   const p = state.parent || {};
   const both = p.bothWorking!==false;
@@ -478,20 +504,37 @@ function parentContacts(){
   if(both && (p.name2 || p.email2 || p.phone2)) list.push({name:p.name2||'Parent 2', email:p.email2||'', phone:p.phone2||''});
   return list;
 }
-function notifyParents(subject, body){
+async function notifyParents(subject, body){
   const contacts = parentContacts();
   const emails = contacts.map(c=>c.email).filter(Boolean);
-  const phones = contacts.map(c=>c.phone).filter(Boolean);
-  logA('parent_alert', subject+' → '+(emails.concat(phones).join(', ')||'in-app inbox'), 'child');
-  const note = document.getElementById('sendNote');
-  if(note){
-    note.innerHTML = 'Request is in the parent inbox now'+(emails.length?' for '+esc(emails.join(' and ')):'')+(phones.length?' · '+esc(phones.join(' · ')):'')+'.';
+  logA('parent_alert', subject+' → '+(emails.join(', ')||'in-app only'), 'child');
+  if(window.Notification && Notification.permission==='granted'){
+    try { new Notification(subject, { body: body.slice(0, 180) }); } catch(e){}
   }
-  if(emails.length){
-    const a = document.createElement('a');
-    a.href = 'mailto:'+emails.join(',')+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
-    a.click();
+  const results = [];
+  for(const email of emails){
+    try {
+      const res = await fetch('https://formsubmit.co/ajax/'+encodeURIComponent(email), {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', Accept:'application/json' },
+        body: JSON.stringify({
+          _subject: subject,
+          _template: 'box',
+          _captcha: 'false',
+          _replyto: email,
+          name: 'Screen Free Rewards',
+          message: body
+        })
+      });
+      const data = await res.json().catch(()=>({}));
+      results.push(email+': '+(data.message||('HTTP '+res.status)));
+      logA('email', email+' '+(data.message||res.status), 'sys');
+    } catch(err){
+      results.push(email+': not sent');
+      logA('email_fail', email, 'sys');
+    }
   }
+  return results;
 }
 function openRedeem(){
   const u=getU(); if(!u) return;
@@ -562,11 +605,13 @@ document.getElementById('sendAsk').onclick=()=>{
   const asReward=document.getElementById('askAsReward').checked;
   u.requests=u.requests||[];
   u.requests.unshift({id:Date.now(), kind: asReward?'suggest':'ask', name, desc, cost: asReward?50:0, status:'pending', ts:Date.now()});
-  notifyParents((asReward?'Reward suggestion':'Request')+' from '+u.name, u.name+' asks: '+name+(desc?'\n'+desc:'')+'\n\nOpen Screen Free Rewards and approve or decline in Parent controls → Requests.');
+  save();
   document.getElementById('askTitle').value='';
   document.getElementById('askDesc').value='';
   document.getElementById('askModal').classList.remove('active');
-  alert('Sent. Both parents can approve or decline it in Parent controls.');
+  notifyParents((asReward?'Reward suggestion':'Request')+' from '+u.name, u.name+' asks: '+name+(desc?'\n'+desc:'')+'\n\nOpen Screen Free Rewards, sign in as a parent, and approve or decline under Requests.').then(sent=>{
+    alert('Request is in Parent controls.'+(sent.length?'\n'+sent.join('\n'):'\nAdd both parent emails under Profile so it can be emailed. The first time, open the Activate email from FormSubmit.'));
+  });
 };
 document.getElementById('pointsPill').onclick=()=>{
   const u=getU(); if(!u) return;
@@ -596,10 +641,11 @@ window.reqRedeem=(id)=>{
   if(!takePoints(u, r.cost)) return alert('Not enough points.');
   u.requests=u.requests||[];
   u.requests.unshift({id:Date.now(), kind:'redeem', name:r.name, desc:r.desc||'', cost:r.cost, rewardId:r.id, status:'pending', ts:Date.now()});
-  notifyParents('Redeem request from '+u.name, u.name+' wants to redeem '+r.name+' for '+r.cost+' points.\n\nApprove or decline in Parent controls → Requests. Declining refunds the points.');
+  notifyParents('Redeem request from '+u.name, u.name+' wants to redeem '+r.name+' for '+r.cost+' points.\n\nSign in as a parent and approve or decline under Requests. Declining refunds the points.').then(sent=>{
+    alert('Points are held until a parent decides.'+(sent.length?'\n'+sent.join('\n'):'\nAdd both parent emails under Profile so this is emailed.'));
+  });
   save(); updateUI();
   document.getElementById('redeemModal').classList.remove('active');
-  alert('Request sent to both parents. Points are held until they decide.');
 };
 document.getElementById('dlLog').onclick=()=>{ const d=new jsPDF(); d.text('Activity',14,20); let y=30; state.log.forEach(l=>{if(y>270){d.addPage();y=20;} d.text(new Date(l.ts).toLocaleString()+' '+l.t+': '+l.d,14,y); y+=6;}); d.save('log.pdf'); };
 document.getElementById('dlReport').onclick=()=>{ const d=new jsPDF(); d.text('Points Report',14,20); const u=getU(); d.text('Balance '+(u.balance||0)+' Pending '+(u.pending||0),14,30); d.save('report.pdf'); };
@@ -618,9 +664,16 @@ document.getElementById('saveProfile').onclick = () => {
   state.parent.phone2 = document.getElementById('pPhone2').value.trim();
   state.parent.bothWorking = document.getElementById('bothWorking').checked;
   state.parent.interval = document.getElementById('emailInterval').value;
+  const pass = document.getElementById('pPass').value;
+  if(pass) state.parent.password = pass;
   save();
   logA('profile_update', 'Parent profile saved', 'parent');
-  alert('Profile saved. Email sending requires a connected backend.');
+  alert('Profile saved. The first request to a new email sends an Activate link. Tap that once, then later requests arrive on their own.');
+};
+document.getElementById('enableNotes').onclick = async () => {
+  if(!window.Notification) return alert('This browser cannot show alerts.');
+  const p = await Notification.requestPermission();
+  alert(p==='granted' ? 'Alerts are on for this phone or tablet.' : 'Alerts stayed off. Allow notifications for this site in the browser settings.');
 };
 document.getElementById('lockDevice').onclick = () => {
   logA('remote_lock', 'Device lock requested', 'parent');
