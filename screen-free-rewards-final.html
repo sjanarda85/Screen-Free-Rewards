@@ -60,21 +60,24 @@ header {
   position: sticky; top: 0; z-index: 40;
   background: rgb(var(--bg) / .8);
   backdrop-filter: blur(16px) saturate(1.4); -webkit-backdrop-filter: blur(16px) saturate(1.4);
-  border-bottom: 2px solid rgb(var(--line));
-  height: 68px;
+  border-bottom: none;
+  height: 84px;
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 20px;
 }
-body.is-login header { background: transparent; border-bottom-color: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; position: absolute; left: 0; right: 0; }
+body.is-login header { background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; position: absolute; left: 0; right: 0; }
 body.is-login .brand-wrap { visibility: hidden; }
-.logo { width: 46px; height: 46px; flex: none; display: block; }
+.logo { width: 64px; height: 64px; flex: none; display: block; }
 .logo svg, .mascot { width: 100%; height: 100%; display: block; overflow: visible; }
+.pill, header .btn, .icon-btn { height: 44px; min-height: 44px; box-sizing: border-box; }
+header .btn { padding: 0 18px; font-size: 15px; border-radius: 16px; }
+header .pill, header .btn { min-width: 104px; justify-content: center; }
 .pill {
-  display: inline-flex; align-items: center; gap: 6px;
+  display: inline-flex; justify-content: center; align-items: center; gap: 6px;
   background: rgb(var(--sun) / .22);
   border: 2px solid rgb(var(--sun) / .8);
   color: rgb(var(--ink));
-  border-radius: 999px; padding: 5px 14px 5px 10px;
+  border-radius: 16px; padding: 0 16px 0 12px;
   font-family: var(--font-display); font-size: 16px; font-weight: 600;
   font-variant-numeric: tabular-nums; cursor: pointer;
 }
@@ -103,7 +106,7 @@ body.is-login .brand-wrap { visibility: hidden; }
 .btn.secondary:active { box-shadow: 0 1px 0 var(--edge); }
 .btn.big { min-height: 56px; font-size: 18px; border-radius: 20px; }
 .icon-btn {
-  width: 44px; height: 44px; flex: none; border-radius: 16px; display: grid; place-items: center;
+  width: 44px; flex: none; border-radius: 16px; display: grid; place-items: center;
   background: rgb(var(--surface)); border: 2px solid rgb(var(--line)); color: rgb(var(--muted));
   box-shadow: 0 3px 0 rgb(var(--line)); cursor: pointer; transition: color .2s, border-color .2s, transform .1s;
 }
@@ -191,11 +194,11 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: rgb(var
 .status-chip { display: inline-block; margin: 8px 0 4px; padding: 4px 14px; border-radius: 999px; font-weight: 600; font-size: 13px; background: rgb(var(--accent) / .12); color: rgb(var(--accent)); }
 .running .status-chip { background: rgb(var(--sun) / .3); color: rgb(var(--ink)); }
 .star-btn {
-  position: relative; width: 190px; height: 190px; border-radius: 50%; border: 0;
+  position: relative; width: 150px; height: 150px; border-radius: 50%; border: 0;
   background: radial-gradient(circle at 34% 26%, rgb(255 255 255 / .4), transparent 40%), linear-gradient(150deg, rgb(var(--accent2)), rgb(var(--accent)));
   color: rgb(var(--onaccent));
-  font-family: var(--font-display); letter-spacing: .06em; font-size: 30px; font-weight: 700; margin: 18px auto 14px; cursor: pointer;
-  box-shadow: 0 8px 0 color-mix(in srgb, rgb(var(--accent)) 60%, black), 0 0 0 12px rgb(var(--accent) / .10), 0 0 0 26px rgb(var(--accent) / .05), 0 30px 40px -16px rgb(var(--accent) / .6);
+  font-family: var(--font-display); letter-spacing: .06em; font-size: 24px; font-weight: 700; margin: 16px auto 12px; cursor: pointer;
+  box-shadow: 0 8px 0 color-mix(in srgb, rgb(var(--accent)) 60%, black), 0 0 0 10px rgb(var(--accent) / .10), 0 0 0 20px rgb(var(--accent) / .05), 0 24px 34px -16px rgb(var(--accent) / .6);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   transition: transform .15s ease, box-shadow .15s ease;
   animation: pulse 2.8s ease-in-out infinite;
@@ -203,8 +206,10 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: rgb(var
 @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.04); } }
 .star-btn:active { transform: translateY(6px) scale(.98); animation: none; box-shadow: 0 2px 0 color-mix(in srgb, rgb(var(--accent)) 60%, black), 0 0 0 12px rgb(var(--accent) / .10), 0 0 0 26px rgb(var(--accent) / .05); }
 .star-btn.stop { animation: none; background: linear-gradient(150deg, rgb(var(--coral)), color-mix(in srgb, rgb(var(--coral)) 80%, black)); color: #fff; box-shadow: 0 8px 0 color-mix(in srgb, rgb(var(--coral)) 55%, black), 0 0 0 12px rgb(var(--coral) / .14), 0 0 0 26px rgb(var(--coral) / .07), 0 30px 40px -16px rgb(var(--coral) / .6); }
-.actions { margin-top: 18px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
-.actions .btn { min-width: 150px; }
+.actions { margin-top: 14px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.actions .btn { min-width: 0; min-height: 42px; padding: 8px 16px; font-size: 14px; border-radius: 14px; }
+.actions .btn.big { min-height: 44px; font-size: 15px; }
+.actions .btn svg { width: 18px; height: 18px; }
 .modal { position: fixed; inset: 0; background: rgb(var(--bg) / .72); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
 .modal.active { display: flex; }
 .modal-box { background: rgb(var(--surface)); border: 2px solid rgb(var(--line)); border-radius: 28px; padding: 26px; max-width: 420px; width: 100%; max-height: 80vh; overflow: auto; box-shadow: var(--shadow); animation: pop .3s cubic-bezier(.2,1.4,.4,1) both; }
@@ -233,14 +238,15 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: rgb(var
 @media (max-width: 520px) {
   header { padding: 0 12px; }
   header > div { gap: 8px !important; }
-  header .btn { min-height: 40px; padding: 6px 12px; font-size: 14px; }
-  .actions .btn { min-width: 0; flex: 1 1 140px; font-size: 15px; padding: 10px 12px; }
-  .actions .btn.big { flex: 1 1 100%; font-size: 17px; }
+  header { height: 76px; }
+  header .btn { padding: 0 12px; font-size: 14px; }
+  .actions .btn { flex: 1 1 130px; font-size: 14px; padding: 8px 10px; }
+  .actions .btn.big { flex: 1 1 100%; font-size: 15px; }
   .pill, header .btn { white-space: nowrap; }
-  .pill { font-size: 15px; padding: 4px 12px 4px 8px; }
+  .pill { font-size: 15px; padding: 0 12px 0 8px; }
   .timer { font-size: 56px; }
 }
-@media (max-width: 440px) { .brand-lock { display: none; } .logo { width: 40px; height: 40px; } }
+@media (max-width: 440px) { .brand-lock { display: none; } .logo { width: 56px; height: 56px; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } .confetti { display: none; } }
 </style>
 </head>
