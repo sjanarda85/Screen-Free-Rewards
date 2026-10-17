@@ -1,6 +1,6 @@
 // Screen Free Rewards offline shell. Pages: network first, falls back to the saved copy.
 // Relay calls (script.google.com) and fonts are never cached here.
-const CACHE = 'sfr-shell-v1.7.0';
+const CACHE = 'sfr-shell-v1.8.0';
 const SHELL = ['./', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => {
