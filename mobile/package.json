@@ -1,0 +1,19 @@
+{
+  "name": "screen-free-rewards-mobile",
+  "version": "1.6.0",
+  "private": true,
+  "description": "Android and iOS wrapper (Capacitor) for Screen Free Rewards",
+  "scripts": {
+    "sync-web": "node scripts/sync-web.mjs",
+    "android:sync": "npm run sync-web && cap sync android",
+    "ios:sync": "npm run sync-web && cap sync ios"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/ios": "^6.1.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2"
+  }
+}

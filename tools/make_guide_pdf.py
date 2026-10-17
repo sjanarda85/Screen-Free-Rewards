@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Builds the parent guide PDF (dark and light). Needs: pip install reportlab
-    python3 tools/make_guide_pdf.py 1.5.0 out_dir
+    python3 tools/make_guide_pdf.py 1.6.0 out_dir
 """
 import sys, os
 from reportlab.lib.pagesizes import A4
@@ -8,7 +8,7 @@ from reportlab.lib.units import mm
 from reportlab.lib.colors import HexColor
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.platypus import BaseDocTemplate, PageTemplate, Frame, Paragraph, Spacer, Table, TableStyle, PageBreak, KeepTogether
-VERSION = sys.argv[1] if len(sys.argv) > 1 else "1.5.0"
+VERSION = sys.argv[1] if len(sys.argv) > 1 else "1.6.0"
 OUT = sys.argv[2] if len(sys.argv) > 2 else "."
 THEMES = {
  "dark": dict(bg="#161719", card="#202226", chip="#2b2d31", chipT="#d9cfb8", ink="#eeece7", mut="#9c9da0", line="#33363b", gold="#d6b260", warnbg="#2a2418", warn="#f2b45a"),
@@ -65,6 +65,9 @@ def build(theme):
           ] + B(["Enter your name, your email (every notification goes here) and, if you like, a second parent's email and your mobile number.", "Choose a parent PIN (4 to 8 digits). It opens Parent controls on the child's device. Keep it secret.", "Enter the child's name, age and their own PIN (4 to 8 digits). The two PINs must be different.", "Press Start. Each parent email is confirmed once: the app emails a 6-digit code and you type it in. Only confirmed emails receive notifications.", "A pairing code appears so you can connect your own phone straight away (see below). You can skip it and do it later in Parent controls, Apps."]) + [
           H2("On the parent's own phone: My phone (parent)"),
           ] + B(["On the child's device open Parent controls, then Apps, then Show pairing code. The code looks like K7QM-4TXD and works for 15 minutes.", "On your phone open the app, choose My phone (parent), type your name and the code, and press Connect. You only do this once.", "Your phone now shows the child's screen time and app list, and can lock the device or apps. Up to 4 parent phones can connect to one child's device, and one phone can follow several children."]) + [
+          Spacer(1, 6), NOTE("<b>Welcome bonus.</b> Every new child starts with 50 points. It is added once when the child is created and counted as earned in that day's summary email."),
+          Spacer(1, 6), NOTE("<b>Family file.</b> Parent controls, Data, Download my data saves children, points, tasks and parents to a file. On a new device choose I have a family file on the first screen (or Load a family file in Data) to restore them. Email links, codes and pairing are never loaded from a file."),
+          Spacer(1, 6), NOTE("<b>Put it on the phone.</b> Open the app address in the phone browser. Android Chrome: menu, Install app. iPhone Safari: Share, Add to Home Screen. It then opens full screen with its own icon and works offline. Android and iOS app projects are in the mobile folder of the package."),
           Spacer(1, 6), NOTE("<b>Siblings.</b> Add more children in Parent controls, Siblings. Each child has their own points, tasks, rewards, requests and PIN. They share the same device and the same parent emails."),
           Spacer(1, 12)]
     # ---- 2 child

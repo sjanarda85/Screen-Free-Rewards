@@ -1,0 +1,8 @@
+{
+  "appId": "com.screenfreerewards.app",
+  "appName": "Screen Free Rewards",
+  "webDir": "www",
+  "backgroundColor": "#161719",
+  "android": { "allowMixedContent": false },
+  "ios": { "contentInset": "always", "backgroundColor": "#161719" }
+}

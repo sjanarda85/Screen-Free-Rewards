@@ -1,0 +1,17 @@
+{
+  "name": "Screen Free Rewards",
+  "short_name": "Screen Free",
+  "description": "Kids earn points for screen-free time. Parents approve, reward and stay informed by email.",
+  "id": "/screen-free.html",
+  "start_url": "/screen-free.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#161719",
+  "theme_color": "#161719",
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}

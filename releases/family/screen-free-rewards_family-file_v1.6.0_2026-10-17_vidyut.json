@@ -1,0 +1,130 @@
+{
+  "users": [
+    {
+      "id": 1792269800687,
+      "name": "Vidyut",
+      "age": 9,
+      "pin": "2468",
+      "sessions": [],
+      "pending": 0,
+      "balance": 50,
+      "tasks": [
+        {
+          "id": 1792269802832,
+          "title": "Read for 30 minutes",
+          "pts": 30,
+          "status": "open"
+        },
+        {
+          "id": 1792269802899,
+          "title": "Tidy my room",
+          "pts": 20,
+          "status": "open"
+        },
+        {
+          "id": 1792269802966,
+          "title": "Help set the dinner table",
+          "pts": 15,
+          "status": "open"
+        },
+        {
+          "id": 1792269803034,
+          "title": "Practice piano for 20 minutes",
+          "pts": 25,
+          "status": "open"
+        },
+        {
+          "id": 1792269803098,
+          "title": "Homework done before play",
+          "pts": 40,
+          "status": "open"
+        }
+      ],
+      "suggestions": [],
+      "requests": [],
+      "rewards": [
+        {
+          "id": 1792269800688,
+          "name": "Movie night",
+          "cost": 100,
+          "desc": "Pick the film"
+        }
+      ],
+      "appLog": [],
+      "bonuses": [
+        {
+          "ts": 1792269800687,
+          "pts": 50,
+          "why": "welcome bonus"
+        }
+      ],
+      "usage": {
+        "2026-10-17": {
+          "inApp": 1,
+          "total": null,
+          "src": "app",
+          "apps": []
+        }
+      }
+    }
+  ],
+  "active": 1792269800687,
+  "pin": "1357",
+  "rate": 1,
+  "schedules": [
+    {
+      "day": "weekday",
+      "from": "16:00",
+      "to": "21:00"
+    },
+    {
+      "day": "weekend",
+      "from": "10:00",
+      "to": "21:00"
+    }
+  ],
+  "log": [
+    {
+      "ts": 1792269800701,
+      "t": "parent_alert",
+      "d": "Screen Free Rewards daily summary: Vidyut, 17 Oct -> suhas85@gmail.com, divya.menon.md@gmail.com",
+      "a": "child"
+    },
+    {
+      "ts": 1792269800687,
+      "t": "bonus",
+      "d": "Vidyut +50 pts, welcome bonus",
+      "a": "sys"
+    },
+    {
+      "ts": 1792269800687,
+      "t": "setup",
+      "d": "Family set up for Vidyut",
+      "a": "parent"
+    }
+  ],
+  "loggedIn": true,
+  "controls": {
+    "rev": 0,
+    "deviceLocked": false,
+    "message": "",
+    "lockedApps": {},
+    "by": ""
+  },
+  "parent": {
+    "name": "Suhas Janardanan",
+    "email": "suhas85@gmail.com",
+    "phone": "",
+    "name2": "Divya Menon",
+    "email2": "divya.menon.md@gmail.com",
+    "phone2": "",
+    "bothWorking": true,
+    "interval": "daily",
+    "notify": {
+      "points": true,
+      "tasks": true
+    },
+    "mailUrl": "",
+    "lastSent": "2026-10-17"
+  }
+}

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Screen Free Rewards</string>
+    <string name="title_activity_main">Screen Free Rewards</string>
+    <string name="package_name">com.screenfreerewards.app</string>
+    <string name="custom_url_scheme">com.screenfreerewards.app</string>
+</resources>

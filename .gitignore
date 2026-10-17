@@ -3,3 +3,10 @@ node_modules
 .tanstack
 dist
 *.log
+mobile/node_modules
+mobile/www
+mobile/ios/App/Pods
+mobile/ios/build
+mobile/android/build
+mobile/android/app/build
+mobile/android/.gradle

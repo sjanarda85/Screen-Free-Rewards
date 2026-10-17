@@ -6,6 +6,12 @@ Premium grained-charcoal dashboard for screen-free time. Children earn points fo
 
 Open [index.html](index.html) in a browser. No install step. It is always the latest version (see `VERSION` and [CHANGELOG.md](CHANGELOG.md)). Every version is kept as its own file in `releases/app/`, named `screen-free-rewards_app_v{version}_{date}_{label}.html`. The version also shows inside the app on the sign-in screen and the parent dashboard.
 
+## Install on a phone
+
+- **Android and iPhone, no store:** open the app link in the phone browser, then Android Chrome menu, Install app, or iPhone Safari Share, Add to Home Screen. It opens full screen and works offline.
+- **Real apps (APK and iOS project):** see [mobile/README.md](mobile/README.md). On GitHub, Actions, Build mobile apps, Run workflow gives an installable Android APK.
+- **Family file:** a saved family (children, points, tasks, both parents) loads from the setup screen or Data tab. `releases/family/` has the Vidyut family.
+
 ## Files and versions
 
 | Where | What |
@@ -13,6 +19,8 @@ Open [index.html](index.html) in a browser. No install step. It is always the la
 | `index.html`, `public/screen-free.html` | Latest app (same file) |
 | `releases/app/` | Every app version, never edited after release |
 | `releases/guide/` | Parent guide PDF (dark and light) |
+| `mobile/` | Android and iOS projects and the build steps |
+| `releases/family/` | Ready family file (Vidyut) |
 | `docs/` | Companion app interface and platform notes |
 | `releases/email/` | Sample daily summary email (HTML, text, preview image) and the PDF report in dark and light |
 | `apps-script/` | Mail link script and setup steps |
