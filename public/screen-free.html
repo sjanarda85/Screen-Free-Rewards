@@ -335,7 +335,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: rgb(var
     </div>
   </div>
 <div id="tab-logs" class="tab-content">
-    <div class="card"><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;"><button class="btn" id="emailSummary" type="button">Email today's summary</button><button class="btn secondary" id="previewSummary" type="button">Preview summary</button></div>
+    <div class="card"><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;"><button class="btn" id="emailSummary" type="button">Email today's summary</button><button class="btn secondary" id="previewSummary" type="button">Preview summary</button><button class="btn secondary" id="pdfSummary" type="button">Download summary PDF</button></div>
     <button class="btn" id="dlLog">Activity PDF</button>
     <button class="btn secondary" id="dlReport" style="margin-left:8px;">Points report PDF</button>
     <div id="logPrev" style="font-size:12px;margin-top:12px;max-height:240px;overflow:auto;"></div></div>
@@ -378,7 +378,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: rgb(var
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
 function newPdf(){ if(!window.jspdf){ alert('PDF tools could not load. Check the internet connection and try again.'); return null; } return new window.jspdf.jsPDF(); }
-const APP_VERSION='1.1.0';
+const APP_VERSION='1.2.0';
 let state = {users:[], active:null, pin:'1234', rate:1, schedules:[], log:[], loggedIn:false};
 function load(){ try{ const r=localStorage.getItem('sfr4'); if(r) Object.assign(state, JSON.parse(r)); }catch(e){} }
 function save(){ try{ localStorage.setItem('sfr4', JSON.stringify(state)); }catch(e){} }
@@ -606,8 +606,55 @@ ${sec('Open tasks ('+d.tasks.length+')')}${text(d.tasks.length?d.tasks.map(x=>'&
 ${sec('Activity today')}${text(d.log.length?d.log.map(l=>'&bull; '+new Date(l.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+' &middot; '+esc(l.t.replace(/_/g,' '))+': '+esc(l.d)).join('<br>'):'No activity yet today.')}
 ${sec('Commentary')}${text(comment)}
 </table></td></tr>
-<tr><td style="padding:0 28px 26px 28px;"><div style="border-top:1px solid #2b2d31;padding-top:16px;${F}font-size:12px;color:#9c9da0;line-height:1.6;"><b style="color:#eeece7;font-size:13px;">Screen Free Rewards</b><br>Open the app, sign in as a parent, then approve points under Overview and decide requests under Requests.<br>${opts.test?'This is a test message sent to check delivery.':'Sent from the parent dashboard.'} &middot; v${APP_VERSION}</div></td></tr>
+<tr><td style="padding:0 28px 26px 28px;"><div style="border-top:1px solid #2b2d31;padding-top:16px;${F}font-size:12px;color:#9c9da0;line-height:1.6;"><b style="color:#eeece7;font-size:13px;">Screen Free Rewards</b><br>Open the app, sign in as a parent, then approve points under Overview and decide requests under Requests.<br>${opts.pdf?'The full report is attached as a PDF.<br>':''}${opts.test?'This is a test message sent to check delivery.':'Sent from the parent dashboard.'} &middot; v${APP_VERSION}</div></td></tr>
 </table></td></tr></table></body></html>`;
+}
+
+function summaryPrintHTML(u,opts){
+  opts=opts||{}; const d=summaryData(u), light=opts.theme==='light';
+  const c=light?{bg:'#f6f3ec',card:'#ffffff',chip:'#ebe4d3',chipT:'#6b5a2e',ink:'#1c1c1a',mut:'#6f6e68',line:'#e4ded0',rule:'#b48a2c',tile:'#1c1c1a',tileT:'#ece5d2',track:'#e4ded0',pos:'#1f8a4f',neg:'#c4373c',warn:'#a8690a'}
+              :{bg:'#161719',card:'#202226',chip:'#2b2d31',chipT:'#d9cfb8',ink:'#eeece7',mut:'#9c9da0',line:'#2b2d31',rule:'#d9cfb8',tile:'#e9e2d0',tileT:'#1c1c1a',track:'#2b2d31',pos:'#54cc88',neg:'#f46c70',warn:'#f2b45a'};
+  const ff=(document.querySelector('style').textContent.match(/@font-face[^}]+}/g)||[]).join('\n');
+  const dateStr=d.date.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  const pct=d.scheduled?Math.min(100,Math.round(d.mins/d.scheduled*100)):0;
+  const status=d.open.length?'Needs attention':'All clear';
+  const row=(l,v,col,b)=>`<div class="r"><span class="l${b?' b':''}">${l}</span><span class="v${b||col?' b':''}" style="${col?'color:'+col:''}">${v}</span></div>`;
+  const sec=(t,body)=>`<section><div class="chip">${t}</div><div class="card">${body}</div></section>`;
+  const list=(a,empty)=>a.length?a.map(x=>'<div class="li">'+x+'</div>').join(''):'<div class="li m">'+empty+'</div>';
+  const comment=esc(d.name)+' spent '+d.mins+' min screen free today and earned '+d.earned+' points.'+(d.pending?' '+d.pending+' points are waiting for your approval.':'')+(d.open.length?' '+d.open.length+' request'+(d.open.length>1?'s are':' is')+' waiting for a decision.':'');
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Screen Free Rewards daily summary ${esc(d.name)} ${dateStr}</title><style>
+${ff}
+@page{size:A4;margin:0}*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:${c.bg};-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{width:210mm;min-height:297mm;padding:15mm 15mm 12mm;font-family:Helvetica,Arial,sans-serif;color:${c.ink};font-size:10.5pt;line-height:1.45}
+.top{display:flex;align-items:center;gap:5mm}.logo{width:15mm;height:15mm;border-radius:4mm;background:${c.tile};color:${c.tileT};display:grid;place-items:center;font-size:20pt}
+h1{font-family:"Bricolage Grotesque",Helvetica,Arial,sans-serif;font-size:19pt;font-weight:700;letter-spacing:-.01em;line-height:1.1}
+.sub{color:${c.mut};font-size:9pt;margin-top:1mm}.right{margin-left:auto;text-align:right}.right b{font-family:"Bricolage Grotesque",Helvetica,Arial,sans-serif;font-size:14pt;display:block}
+.rule{height:1.1mm;background:linear-gradient(90deg,${c.rule},#d6b260);margin:6mm 0 5mm;border-radius:1mm}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:3mm;margin-bottom:2mm}
+.k{background:${c.card};border:.3mm solid ${c.line};border-radius:3mm;padding:4mm}.k span{display:block;font-size:7pt;letter-spacing:.14em;text-transform:uppercase;color:${c.mut};font-weight:700}
+.k b{display:block;font-family:"Bricolage Grotesque",Helvetica,Arial,sans-serif;font-size:21pt;line-height:1.1;margin-top:1.5mm}.k small{color:${c.mut};font-size:8pt}
+section{margin-top:5mm;break-inside:avoid}.chip{display:inline-block;background:${c.chip};color:${c.chipT};font-size:7.5pt;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:2mm 4mm;border-radius:.8mm}
+.card{background:${c.card};border:.3mm solid ${c.line};border-radius:0 2mm 2mm 2mm;padding:1mm 5mm}
+.r{display:flex;justify-content:space-between;padding:2.2mm 0;border-bottom:.3mm solid ${c.line}}.r:last-child{border-bottom:0}.l{color:${c.mut}}.l.b,.b{font-weight:700;color:${c.ink}}.v{text-align:right}
+.li{padding:2.2mm 0;border-bottom:.3mm solid ${c.line}}.li:last-child{border-bottom:0}.m{color:${c.mut}}
+.bar{height:3mm;background:${c.track};border-radius:2mm;overflow:hidden;margin:3mm 0 1mm}.bar i{display:block;height:100%;width:${pct}%;background:linear-gradient(90deg,#d6b260,${c.rule});border-radius:2mm}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:5mm}
+.foot{margin-top:8mm;padding-top:4mm;border-top:.3mm solid ${c.line};display:flex;justify-content:space-between;color:${c.mut};font-size:8pt}.foot b{color:${c.ink}}
+</style></head><body>
+<div class="top"><div class="logo"><svg viewBox="0 0 24 24" width="9mm" height="9mm"><path d="M12 2.5 14.4 9.6 21.5 12 14.4 14.4 12 21.5 9.6 14.4 2.5 12 9.6 9.6Z" fill="currentColor"/></svg></div><div><h1>Screen Free Rewards</h1><div class="sub">Daily summary${opts.test?' &middot; TEST':''}</div></div><div class="right"><b>${dateStr}</b><div class="sub">${esc(d.name)}${d.age?', age '+d.age:''}</div></div></div>
+<div class="rule"></div>
+<div class="kpis"><div class="k"><span>Balance</span><b>${d.balance}</b><small>points</small></div><div class="k"><span>Pending</span><b style="color:${d.pending?c.warn:c.ink}">${d.pending}</b><small>awaiting approval</small></div><div class="k"><span>Earned today</span><b style="color:${c.pos}">+${d.earned}</b><small>points</small></div><div class="k"><span>Screen free</span><b>${d.mins}</b><small>minutes today</small></div></div>
+${sec('Child',row('Name',esc(d.name))+row('Age',d.age?String(d.age):'-')+row('Status',status,d.open.length?c.warn:c.pos,true))}
+<div class="cols">${sec('Points',row('Balance',d.balance+' pts',null,true)+row('Pending approval',d.pending+' pts',d.pending?c.warn:null)+row('Earned today','+'+d.earned+' pts',c.pos)+row('Redeemed today','-'+d.redeemed+' pts',d.redeemed?c.neg:null))}
+${sec('Screen-free time',row('Scheduled today',d.scheduled+' min')+row('Actual timer',d.mins+' min',null,true)+row('Unused',d.unused+' min')+'<div class="bar"><i></i></div><div class="sub">'+pct+'% of today\'s window used</div>')}</div>
+<div class="cols">${sec('Open requests ('+d.open.length+')',list(d.open.map(r=>'<b>'+esc(r.kind)+'</b>: '+esc(r.name)+(r.cost?' ('+r.cost+' pts)':'')),'None.'))}
+${sec('Open tasks ('+d.tasks.length+')',list(d.tasks.map(x=>esc(x.title)+' (+'+x.pts+' pts)'),'None.'))}</div>
+${sec('Activity today',list(d.log.map(l=>new Date(l.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+' &middot; '+esc(l.t.replace(/_/g,' '))+': '+esc(l.d)),'No activity yet today.'))}
+${sec('Commentary','<div class="li">'+comment+'</div>')}
+<div class="foot"><div><b>Screen Free Rewards</b> &middot; v${APP_VERSION}<br>Sign in as a parent to approve points and decide requests.</div><div style="text-align:right">${dateStr}<br>${opts.test?'Test report':'Daily report'}</div></div>
+${opts.print?'<script>window.addEventListener("load",function(){setTimeout(function(){window.print()},500)})<\/script>':''}
+</body></html>`;
 }
 const MAIL_STATE={};
 async function deliver(subject, body){
@@ -800,6 +847,7 @@ document.getElementById('saveProfile').onclick = () => {
 document.getElementById('testEmail').onclick = async () => { const u=getU(); if(!u) return; const b=document.getElementById('testEmail'); b.disabled=true; await sendSummary(u,true,true); b.disabled=false; };
 document.getElementById('emailSummary').onclick = async () => { const u=getU(); if(!u) return; const b=document.getElementById('emailSummary'); b.disabled=true; await sendSummary(u,true,false); b.disabled=false; };
 document.getElementById('previewSummary').onclick = () => { const u=getU(); if(!u) return; const w=window.open(URL.createObjectURL(new Blob([summaryHTML(u,{})],{type:'text/html'})),'_blank'); if(!w) alert('Allow pop-ups to preview the summary.'); };
+document.getElementById('pdfSummary').onclick = () => { const u=getU(); if(!u) return; const w=window.open(URL.createObjectURL(new Blob([summaryPrintHTML(u,{theme:'dark',print:true})],{type:'text/html'})),'_blank'); if(!w) alert('Allow pop-ups, then choose Save as PDF in the print window.'); };
 document.getElementById('enableNotes').onclick = async () => {
   if(!window.Notification) return alert('This browser cannot show alerts.');
   const p = await Notification.requestPermission();

@@ -12,7 +12,8 @@ Open [index.html](index.html) in a browser. No install step. It is always the la
 |---|---|
 | `index.html`, `public/screen-free.html` | Latest app (same file) |
 | `releases/app/` | Every app version, never edited after release |
-| `releases/email/` | Sample daily summary email (HTML, text and preview image) |
+| `releases/email/` | Sample daily summary email (HTML, text, preview image) and the PDF report in dark and light |
+| `tools/` | Script that draws the summary PDF |
 | `releases/screenshots/vX.Y.Z/` | Screenshots of each version |
 | `archive/` | Design explorations that are not used in the app |
 | `CHANGELOG.md`, `VERSION`, `CLAUDE.md` | History, current version, and the release rules |
@@ -29,4 +30,4 @@ Parent PIN defaults to `1234`. In Profile, add both parents' name, email, and mo
 
 ## Email to parents
 
-Add one or both parent emails under Profile (signing in as a parent with an email also saves it). Child requests, redeem requests, a manual **Email today's summary** (Reports) and **Send test email** (Profile) all go through FormSubmit. The first message to a new address sends an Activate email from FormSubmit: open it once and tap the button, then every later message arrives on its own. If sending fails the app offers to open your email app with the message ready. Set **Send log every** to Daily or Weekly to have the summary sent automatically after 20:00 while the app is open on a device. The summary uses the same layout as the Thakazhi Peedika daily summary (**Preview summary** shows it).
+Add one or both parent emails under Profile (signing in as a parent with an email also saves it). Child requests, redeem requests, a manual **Email today's summary** (Reports) and **Send test email** (Profile) all go through FormSubmit. The first message to a new address sends an Activate email from FormSubmit: open it once and tap the button, then every later message arrives on its own. If sending fails the app offers to open your email app with the message ready. Set **Send log every** to Daily or Weekly to have the summary sent automatically after 20:00 while the app is open on a device. The summary uses the same layout as the Thakazhi Peedika daily summary (**Preview summary** shows it, **Download summary PDF** opens the print-ready A4 report: choose Save as PDF).
