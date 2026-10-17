@@ -29,10 +29,8 @@ Open [index.html](index.html) in a browser. No install step. It is always the la
 
 Parent PIN defaults to `1234`. In Profile, add both parents' name, email, and mobile, and turn on "both at work". Requests show up immediately under Requests. Approve or decline there. Approving a suggestion adds it to Rewards. Declining a redeem refunds the points.
 
-## Email to parents (one click)
+## Email to parents (every notification, per family)
 
-Emails work the same way as the Thakazhi Peedika daily summary: the app builds the PDF report itself and posts it to a Google Apps Script mail link that sends it from your Google account. No activation, no mail app.
+This is a product: each parent installs it on their child's device and sets their own email. On first start the app asks for the family details (parent and optional second parent email, parent PIN, child name, child PIN) and confirms each parent's email once with a 6-digit code. After that every notification goes to that family's emails only: points earned, tasks completed, reward and redeem requests, and a daily summary with a PDF report. Parents can switch off the points and task emails under Profile.
 
-One-time setup (about 3 minutes): follow [apps-script/SETUP.md](apps-script/SETUP.md), then paste the link under Parent controls, Profile, Mail link. After that **Send test email**, **Email today's summary** and every child request email both parents on one click, with the PDF attached. If no link is saved yet, pressing **Send test email** asks for it once.
-
-Set **Send log every** to Daily or Weekly to send the summary automatically after 20:00 while the app is open. **Download summary PDF** saves the report directly. **Preview summary** shows the HTML version.
+Emails are sent by one mail relay that the app owner runs (about 5 minutes to set up, then every customer works with no setup): see [apps-script/SETUP.md](apps-script/SETUP.md). `tools/bake_mail_link.py` makes the customer build with the relay link built in. Open any build with `?demo=1` to see sample data.

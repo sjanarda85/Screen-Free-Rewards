@@ -1,15 +1,30 @@
-# Mail link setup (one time, about 3 minutes)
+# Mail relay setup (you do this once, for all customers)
 
-This gives Screen Free Rewards its own mail sender, the same way the Thakazhi Peedika daily summary works. After this, the **Send test email**, **Email today's summary** buttons and every child request email both parents on one click, with the PDF report attached. Nothing to open or confirm.
+Screen Free Rewards emails parents about everything their child does: points earned, tasks, reward requests and the daily summary with a PDF report. Each family only enters their own email in the app. The emails are sent by one mail relay that **you** run. This is the same model as the Thakazhi Peedika daily summary.
 
-1. Open https://script.google.com and sign in with the Google account the emails should come from. Choose **New project**.
+## What a customer does
+1. Installs the app on their child's device and fills in the family setup: parent name, email (and a second parent if they like), parent PIN, child name and age, child PIN.
+2. Types the 6-digit code that arrives in their inbox, once per parent email.
+3. That is all. From then on every notification goes to that family's emails, and to nobody else. Each family's data stays on its own device.
+
+## What you do once (about 5 minutes)
+1. Open https://script.google.com signed in with the Google account the emails should come from. Choose **New project**.
 2. Delete the sample code and paste the whole of `apps-script/Code.gs`.
-3. Near the top, put both parent emails in `ALLOWED_RECIPIENTS`, for example `['sam@example.com', 'alex@example.com']`. This stops anyone else using your link to email other people.
-4. Click **Deploy**, then **New deployment**. Choose type **Web app**. Set **Execute as: Me** and **Who has access: Anyone**. Click **Deploy** and approve the permission request (it only needs to send email).
-5. Copy the **Web app URL**. It starts with `https://script.google.com/macros/s/` and ends with `/exec`.
-6. In the app: Parent controls, Profile, paste it into **Mail link**, add the parent emails, and press **Save profile**. (Or just press **Send test email** and paste the link when asked.)
-7. Press **Send test email**. It should arrive within a few seconds.
+3. Click **Deploy**, then **New deployment**, type **Web app**. Set **Execute as: Me** and **Who has access: Anyone**. Click **Deploy** and approve the permission request (it only sends email).
+4. Copy the **Web app URL** (starts with `https://script.google.com/macros/s/`, ends with `/exec`).
+5. Make the customer build, which has your link built in so customers never see it:
+
+       python3 tools/bake_mail_link.py "PASTE-YOUR-LINK" index.html customer-build.html
+
+   Or send me the link and I will make it. Give customers `customer-build.html`.
+6. To test as the owner, open the app with `?admin=1` on the end of the address to see the mail link field.
 
 If you change `Code.gs` later, use **Deploy, Manage deployments, Edit, New version** so the same link keeps working.
 
-Privacy: the link lets anyone who knows it ask the script to send mail to the allowed addresses only. Keep the link private and keep `ALLOWED_RECIPIENTS` filled in.
+## How the relay protects you and your customers
+- Only addresses that proved ownership with a 6-digit code can receive mail, so it cannot be used to spam strangers.
+- The sender name is fixed, only a PDF attachment is accepted, and message sizes are capped.
+- Limits per address and per day (`MAX_SENDS_PER_ADDRESS_PER_DAY`, `MAX_CODES_PER_ADDRESS_PER_DAY`, `MAX_EMAILS_PER_DAY`) are at the top of `Code.gs`.
+
+## Know the limit before you sell widely
+A Google Apps Script relay sends from a normal Google account, which Google caps at about **100 emails a day** (about 1,500 with Google Workspace). Each family can generate many emails a day, so this is right for testing and a small first group of customers, not for hundreds of families. For wide sale, move the same relay to a transactional email service (for example Resend, Postmark or Amazon SES) behind a small server endpoint. The app does not change: it only needs a different link. Tell me when you are ready and I will build that endpoint.

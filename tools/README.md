@@ -5,3 +5,7 @@
     python3 make_summary_pdf.py data.json dark out.pdf
 
 `data.json` is the output of the app's `summaryData()` (name, age, date, balance, pending, earned, mins, scheduled, unused, redeemed, open, tasks, log with time). The app's own **Download summary PDF** button prints the same layout from the browser.
+
+`bake_mail_link.py` makes the customer build with your mail relay link built in (see `apps-script/SETUP.md`).
+
+`test-relay.mjs` runs the relay script (`apps-script/Code.gs`) in Node against stand-ins for the Google services and checks verification codes, tokens, limits and attachment rules: `node tools/test-relay.mjs`.

@@ -158,6 +158,11 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: rgb(var
 .modal-box { background: rgb(var(--surface)); border: 1px solid rgb(var(--line)); border-radius: 22px; padding: 24px; max-width: 420px; width: 100%; max-height: 82vh; overflow: auto; box-shadow: 0 30px 60px -20px rgb(0 0 0 / .8); animation: pop .25s cubic-bezier(.2,1.2,.4,1) both; }
 @keyframes pop { from { opacity: 0; transform: scale(.96) translateY(6px); } to { opacity: 1; transform: none; } }
 .modal-box h3 { font-family: var(--font-display); font-size: 20px; font-weight: 600; letter-spacing: 0; text-transform: none; color: rgb(var(--ink)); margin-bottom: 4px; }
+.setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; text-align: left; }
+.setup-grid .full { grid-column: 1 / -1; }
+.setup-card h3 { font-family: var(--font-body); font-size: 11px; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; color: rgb(var(--accent)); margin: 14px 0 2px; text-align: left; }
+.setup-card small { color: rgb(var(--muted)); font-size: 12.5px; display: block; margin: 6px 0 0; text-align: left; line-height: 1.5; }
+@media (max-width: 520px) { .setup-grid { grid-template-columns: 1fr; } }
 .ver { margin-top: 16px; font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: rgb(var(--muted) / .8); }
 .ver-inline { margin-left: 8px; padding: 2px 8px; border: 1px solid rgb(var(--line)); border-radius: 999px; letter-spacing: .08em; font-weight: 600; }
 .toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; z-index: 300; padding: 12px 20px; border-radius: 14px; background: rgb(var(--raised)); border: 1px solid rgb(var(--accent) / .5); color: rgb(var(--ink)); font-weight: 600; box-shadow: 0 20px 40px -16px rgb(0 0 0 / .8); transition: opacity .25s, transform .25s; }
@@ -215,6 +220,33 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: rgb(var
         <button class="btn big" id="doReset" style="width:100%;margin-top:10px;">Recover</button>
         <span class="backlink" id="backLogin2">Back</span>
       </div>
+    </div>
+    <div class="ver" data-ver>Screen Free Rewards</div>
+  </div>
+</div>
+
+<div id="setupView" class="login-wrap" style="display:none;">
+  <div class="login-stage" style="max-width:520px;">
+    <span class="logo" role="img" aria-label="Screen Free Rewards"><svg viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="lgs" x1="4" y1="2" x2="44" y2="46" gradientUnits="userSpaceOnUse"><stop style="stop-color:rgb(var(--accent))"/><stop offset="1" style="stop-color:rgb(var(--accent2))"/></linearGradient></defs><rect width="48" height="48" rx="14" fill="url(#lgs)"/><rect x=".5" y=".5" width="47" height="47" rx="13.5" fill="none" stroke="#fff" stroke-opacity=".25"/><path d="M30.9 14.6A12 12 0 1 1 17.1 14.6" fill="none" stroke-width="3.2" stroke-linecap="round" style="stroke:rgb(var(--onaccent))"/><path d="M24 17.2L25.9 22.1 30.8 24 25.9 25.9 24 30.8 22.1 25.9 17.2 24 22.1 22.1Z" style="fill:rgb(var(--onaccent))"/></svg></span>
+    <h1>Set up your family</h1>
+    <span class="eyebrow">Every notification goes to your email</span>
+    <div class="login-card setup-card" style="text-align:left;">
+      <h3 style="margin-top:0;">You (parent)</h3>
+      <div class="setup-grid">
+        <input id="sPName" placeholder="Your name" autocomplete="name">
+        <input id="sPPhone" placeholder="Mobile (optional)" inputmode="tel" autocomplete="tel">
+        <input id="sPEmail" class="full" type="email" placeholder="Your email for notifications" autocomplete="email">
+        <input id="sPEmail2" class="full" type="email" placeholder="Second parent email (optional)">
+        <input id="sPPin" type="password" placeholder="Parent PIN (4 to 8 digits)" inputmode="numeric" autocomplete="off">
+      </div>
+      <h3>Your child</h3>
+      <div class="setup-grid">
+        <input id="sChild" placeholder="Child name">
+        <input id="sAge" type="number" placeholder="Age" inputmode="numeric">
+        <input id="sCPin" type="password" placeholder="Child PIN (4 to 8 digits)" inputmode="numeric" autocomplete="off">
+      </div>
+      <small>You will get an email for every request, redeem, task and points earned, plus a daily summary with a PDF report. Each parent confirms their email once with a 6-digit code.</small>
+      <button class="btn big" id="doSetup" style="width:100%;margin-top:14px;">Start</button>
     </div>
     <div class="ver" data-ver>Screen Free Rewards</div>
   </div>
@@ -305,28 +337,32 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: rgb(var
   <div id="tab-profile" class="tab-content">
     <div class="card">
       <h3>Parent profile</h3>
-      <p style="font-size:12px;color:rgb(var(--muted));margin-bottom:8px;">Used for monitoring reports. Email delivery requires a backend service.</p>
+      <p style="font-size:12px;color:rgb(var(--muted));margin-bottom:8px;">Your contact details. Every notification and the daily summary are emailed to the addresses below.</p>
       <input id="pName" placeholder="Parent name">
       <input id="pEmail" type="email" placeholder="Email">
       <input id="pPhone" placeholder="Mobile">
-      <input id="pPass" type="password" placeholder="Parent password (default PIN 1234)">
+      <input id="pPass" type="password" placeholder="Parent password (optional, your parent PIN also works)">
       <p style="font-size:12px;color:rgb(var(--muted));margin:8px 0;">With the mail link saved below, every request, redeem and summary is emailed to both parents automatically with the PDF report attached. Nothing to open or confirm. Phone alerts work on this device after you allow them.</p>
       <button class="btn secondary" id="enableNotes" type="button">Allow phone alerts</button>
       <h3 style="margin-top:16px;">Second parent</h3>
-      <p style="font-size:12px;color:rgb(var(--muted));margin-bottom:8px;">Use this when both parents are at work. Every child request is filed for both, and a ready email opens to both addresses.</p>
+      <p style="font-size:12px;color:rgb(var(--muted));margin-bottom:8px;">Add a second parent so both of you get every notification. Each address is confirmed once with a 6-digit code.</p>
       <input id="pName2" placeholder="Second parent name">
       <input id="pEmail2" type="email" placeholder="Second parent email">
       <input id="pPhone2" placeholder="Second parent mobile">
-      <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:8px 0;"><input id="bothWorking" type="checkbox" style="width:auto;"> Both parents are at work</label>
+      <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:8px 0;"><input id="bothWorking" type="checkbox" style="width:auto;"> Send every email to both parents</label>
+      <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:8px 0 2px;"><input id="nPoints" type="checkbox" style="width:auto;"> Email me when points are earned</label>
+      <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:2px 0;"><input id="nTasks" type="checkbox" style="width:auto;"> Email me when a task is completed</label>
+      <p style="font-size:12px;color:rgb(var(--muted));margin:2px 0 8px;">Requests and redeem requests are always emailed.</p>
       <label style="font-size:12px;color:rgb(var(--muted));">Send log every</label>
       <select id="emailInterval">
         <option value="off">Off</option>
         <option value="daily">Daily</option>
         <option value="weekly">Weekly</option>
       </select>
-      <label style="font-size:12px;color:rgb(var(--muted));">Mail link (one time, from apps-script/SETUP.md)</label>
-      <input id="mailUrl" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off">
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"><button class="btn" id="saveProfile">Save profile</button><button class="btn secondary" id="testEmail" type="button">Send test email</button></div>
+      <div id="mailLinkBox"><label style="font-size:12px;color:rgb(var(--muted));">Mail link (app owner only, from apps-script/SETUP.md)</label>
+      <input id="mailUrl" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off"></div>
+      <div id="verifyList" style="margin:6px 0 2px;"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"><button class="btn" id="saveProfile">Save profile</button><button class="btn secondary" id="testEmail" type="button">Send test email</button><button class="btn secondary" id="shareSetup" type="button">Copy family setup link</button></div>
     </div>
     <div class="card">
       <h3>Remote actions (requires native app)</h3>
@@ -380,7 +416,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: rgb(var
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
 function newPdf(){ if(!window.jspdf){ alert('PDF tools could not load. Check the internet connection and try again.'); return null; } return new window.jspdf.jsPDF(); }
-const APP_VERSION='1.3.0';
+const APP_VERSION='1.4.0';
 let state = {users:[], active:null, pin:'1234', rate:1, schedules:[], log:[], loggedIn:false};
 function load(){ try{ const r=localStorage.getItem('sfr4'); if(r) Object.assign(state, JSON.parse(r)); }catch(e){} }
 function save(){ try{ localStorage.setItem('sfr4', JSON.stringify(state)); }catch(e){} }
@@ -443,11 +479,12 @@ function show(id){
   document.querySelectorAll('.view,.login-wrap').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.login-wrap').forEach(v=>v.style.display='none');
   const el=document.getElementById(id);
-  if(el){ el.classList.add('active'); if(id==='loginView') el.style.display='flex'; }
+  if(el){ el.classList.add('active'); if(id==='loginView'||id==='setupView') el.style.display='flex'; }
   if(id==='loginView'){ ['signupForm','forgotForm','parentLoginForm'].forEach(f=>document.getElementById(f).style.display='none'); document.getElementById('loginForm').style.display='block'; ['loginUser','loginPass','suName','suAge','suPin','forgotPin','plEmail','plPass'].forEach(f=>{ document.getElementById(f).value=''; }); }
-  document.getElementById('logoutBtn').style.display = (id!=='loginView') ? 'inline-flex' : 'none';
-  document.getElementById('pointsPill').style.display = (id!=='loginView') ? '' : 'none';
-  document.body.classList.toggle('is-login', id==='loginView');
+  const gate=(id==='loginView'||id==='setupView');
+  document.getElementById('logoutBtn').style.display = !gate ? 'inline-flex' : 'none';
+  document.getElementById('pointsPill').style.display = !gate ? '' : 'none';
+  document.body.classList.toggle('is-login', gate);
 }
 
 document.getElementById('doLogin').onclick=()=>{
@@ -490,7 +527,7 @@ document.getElementById('toggleBtn').onclick=()=>{
   if(u.activeStart){
     const pts=Math.floor((Date.now()-u.activeStart)/60000*state.rate);
     if(pts>0){ u.pending=(u.pending||0)+pts; u.sessions=u.sessions||[]; u.sessions.unshift({id:Date.now(),start:u.activeStart,end:Date.now(),pts}); logA('session','+'+pts); }
-    u.activeStart=null; toast(pts>0?'+'+pts+' points collected, waiting for parent approval':'Session saved. Stay screen free a little longer to earn points.');
+    const _m=Math.floor((Date.now()-u.activeStart)/60000); u.activeStart=null; if(pts>0) notifyEvent('points',u,u.name+' earned '+pts+' points','Points earned',[['Child',u.name],['Points earned','+'+pts,'#54cc88'],['Session',_m+' min screen free'],['Waiting for approval',Math.floor((u.pending||0))+' pts','#f2b45a']]); toast(pts>0?'+'+pts+' points collected, waiting for parent approval':'Session saved. Stay screen free a little longer to earn points.');
   } else { u.activeStart=Date.now(); toast('Timer started. Have fun away from screens!'); }
   save(); updateUI();
 };
@@ -517,7 +554,12 @@ function renderParent(){
     document.getElementById('bothWorking').checked = state.parent.bothWorking!==false;
     document.getElementById('emailInterval').value = state.parent.interval||'off';
     document.getElementById('mailUrl').value = state.parent.mailUrl||'';
+    document.getElementById('nPoints').checked = (state.parent.notify||{}).points!==false;
+    document.getElementById('nTasks').checked = (state.parent.notify||{}).tasks!==false;
   }
+  { const owner=!validMailUrl(DEFAULT_MAIL_LINK)||/[?&]admin=1/.test(location.search); document.getElementById('mailLinkBox').style.display=owner?'':'none'; document.getElementById('shareSetup').style.display=owner?'':'none'; }
+  { const vl=document.getElementById('verifyList'); const cs=parentContacts().filter(c=>c.email);
+    vl.innerHTML=cs.length?cs.map(c=>`<div class="item" style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><span>${esc(c.email)}</span>${isVerified(c.email)?'<b style="color:rgb(var(--pos));">Verified</b>':`<button class="btn small" type="button" data-e="${esc(c.email)}" onclick="verifyClick(this.dataset.e)">Verify</button>`}</div>`).join(''):'<div class="empty">Add a parent email, save, then verify it once so requests can be emailed to it.</div>'; }
   const u=getU(); if(!u) return;
   document.getElementById('bal').textContent=Math.floor(u.balance||0);
   document.getElementById('pend').textContent=Math.floor(u.pending||0);
@@ -617,7 +659,8 @@ ${sec('Commentary')}${text(comment)}
 // ---- Mail: same model as the Thakazhi Peedika daily summary. The app builds a PDF in the browser and posts it
 // to this app's own Google Apps Script web link (see apps-script/SETUP.md), which emails it from the owner's Google account.
 // No activation and no mail app. The link is saved once under Profile, Mail link. There is no default link.
-function mailUrl(){ return ((state.parent&&state.parent.mailUrl)||'').trim(); }
+const DEFAULT_MAIL_LINK=''; // paste the relay link here once, before you share this file with other parents (apps-script/SETUP.md)
+function mailUrl(){ return ((state.parent&&state.parent.mailUrl)||'').trim()||DEFAULT_MAIL_LINK; }
 function validMailUrl(s){ return /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(String(s||'').trim()); }
 const HW={"r":[278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584],"b":[278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584]};
 const PDF_THEMES={
@@ -683,32 +726,57 @@ function buildSummaryPdf(d, theme, opts){
 function summaryForPdf(u){ const s=summaryData(u); return Object.assign({},s,{dateStr:s.date.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}), log:s.log.map(l=>({t:l.t,d:l.d,time:new Date(l.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}))}); }
 function summaryPdfFor(u,test){ return buildSummaryPdf(summaryForPdf(u),'dark',{test:!!test}); }
 function pdfFileName(u){ const s=summaryData(u); return 'screen-free-rewards_summary_'+String(u.name).toLowerCase().replace(/[^a-z0-9]+/g,'-')+'_'+s.date.toISOString().slice(0,10)+'.pdf'; }
-async function postMail(to, subject, message, att, html){
-  if(!validMailUrl(mailUrl())) throw new Error('mail link not set');
-  const body=JSON.stringify({to, subject, message, htmlBody:html||'', fromName:'Screen Free Rewards', attachmentName:att.name, attachmentBase64:att.uri});
+async function relayCall(payload){
+  const link=mailUrl(); if(!validMailUrl(link)) throw new Error('mail link not set');
   let lastErr;
   for(let attempt=0; attempt<2; attempt++){
     const ctl=new AbortController(), timer=setTimeout(()=>ctl.abort(),30000);
     try{
-      const res=await fetch(mailUrl(),{method:'POST',signal:ctl.signal,headers:{'Content-Type':'text/plain;charset=utf-8'},body});
+      const res=await fetch(link,{method:'POST',signal:ctl.signal,headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
       clearTimeout(timer);
       if(!res.ok) throw new Error('HTTP '+res.status);
       const data=await res.json().catch(()=>null);
-      if(data&&(data.ok===false||data.success===false||data.error)) throw new Error(String(data.error||data.message||'rejected'));
-      return;
-    }catch(err){ clearTimeout(timer); lastErr=err; if(attempt===0) await new Promise(r=>setTimeout(r,1500)); }
+      if(data&&(data.ok===false||data.success===false||data.error)){ const e=new Error(String(data.error||data.message||'rejected')); e.final=true; throw e; }
+      return data||{};
+    }catch(err){ clearTimeout(timer); lastErr=err; if(err.final) throw err; if(attempt===0) await new Promise(r=>setTimeout(r,1500)); }
   }
   throw lastErr;
 }
+function emailKey(e){ return String(e||'').trim().toLowerCase(); }
+function tokenFor(email){ return ((state.parent&&state.parent.tokens)||{})[emailKey(email)]||''; }
+function isVerified(email){ return !!tokenFor(email); }
+function forgetToken(email){ if(state.parent&&state.parent.tokens){ delete state.parent.tokens[emailKey(email)]; save(); } }
+async function postMail(to, subject, message, att, html){
+  return relayCall({to, subject, message, htmlBody:html||'', fromName:'Screen Free Rewards', attachmentName:att?att.name:'', attachmentBase64:att?att.uri:'', token:tokenFor(to)});
+}
+// One-time check that a parent owns the address: the relay emails a 6-digit code, the parent types it here
+async function verifyEmail(email){
+  await relayCall({action:'verify', email});
+  const code=(prompt('We emailed a 6-digit code to '+email+'. Enter it here:')||'').trim();
+  if(!code) return false;
+  const r=await relayCall({action:'confirm', email, code});
+  state.parent=state.parent||{}; state.parent.tokens=state.parent.tokens||{}; state.parent.tokens[emailKey(email)]=r.token; save();
+  toast(email+' verified'); renderParent(); return true;
+}
+function ensureMailLink(){
+  if(validMailUrl(mailUrl())) return true;
+  const link=(prompt('One-time setup. Paste your Screen Free Rewards mail link (it starts with https://script.google.com/macros/s/ and ends with /exec). Steps are in apps-script/SETUP.md.')||'').trim();
+  if(!link) return false;
+  if(!validMailUrl(link)){ alert('That does not look like a mail link. It should start with https://script.google.com/macros/s/ and end with /exec.'); return false; }
+  state.parent=state.parent||{}; state.parent.mailUrl=link; save(); renderParent(); return true;
+}
+window.verifyClick=async email=>{ try{ if(!ensureMailLink()) return; await verifyEmail(email); }catch(err){ alert('Could not verify '+email+': '+(err&&err.message||'offline')); } };
 async function deliver(subject, body, u, opts){
   opts=opts||{}; const contacts=parentContacts(), emails=contacts.map(c=>c.email).filter(Boolean);
   logA('parent_alert', subject+' -> '+(emails.join(', ')||'in-app only'), 'child');
   if(window.Notification && Notification.permission==='granted'){ try { new Notification(subject, { body: body.slice(0, 180) }); } catch(e){} }
   const results=[]; if(!emails.length || !validMailUrl(mailUrl())) return {emails, results, lines:[], sent:0, noLink:!validMailUrl(mailUrl())};
-  const att={name:pdfFileName(u), uri:summaryPdfFor(u,opts.test)}, html=summaryHTML(u,{test:opts.test,pdf:true});
+  if(!emails.some(isVerified)) return {emails, results, lines:emails.map(e=>e+': not verified yet'), sent:0, unverified:true};
+  const att=opts.pdf===false?null:{name:pdfFileName(u), uri:summaryPdfFor(u,opts.test)}, html=opts.html||summaryHTML(u,{test:opts.test,pdf:true});
   for(const email of emails){
     let ok=false, msg='';
-    try{ await postMail(email, subject, body, att, html); ok=true; msg='sent'; }catch(err){ msg='not sent ('+(err&&err.name==='AbortError'?'timed out':(err&&err.message)||'offline')+')'; }
+    if(!isVerified(email)){ results.push({email, ok:false, msg:'not verified yet'}); continue; }
+    try{ await postMail(email, subject, body, att, html); ok=true; msg='sent'; }catch(err){ msg='not sent ('+(err&&err.name==='AbortError'?'timed out':(err&&err.message)||'offline')+')'; if(/not verified/i.test(err&&err.message||'')) forgetToken(email); }
     results.push({email, ok, msg}); logA(ok?'email_sent':'email_fail', email+' '+msg, 'sys');
   }
   return {emails, results, lines:results.map(r=>r.email+': '+r.msg), sent:results.filter(r=>r.ok).length};
@@ -725,25 +793,40 @@ async function notifyParents(subject, body){
   const r=await deliver(subject, body, u);
   return r.lines;
 }
+
+// Short notification email in the same layout as the daily summary
+function eventHTML(u,o){
+  const F='font-family:Helvetica,Arial,sans-serif;', date=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  const row=(l,v,c)=>`<tr><td style="padding:9px 0;border-bottom:1px solid #2b2d31;${F}font-size:14px;color:#9c9da0;">${esc(l)}</td><td align="right" style="padding:9px 0;border-bottom:1px solid #2b2d31;${F}font-size:14px;font-weight:700;color:${c||'#eeece7'};">${esc(v)}</td></tr>`;
+  return `<!doctype html><html><body style="margin:0;padding:0;background:#161719;"><table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#161719;"><tr><td align="center" style="padding:24px 12px;"><table width="560" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:560px;background:#1b1d20;border-radius:4px;"><tr><td style="padding:26px 26px 8px 26px;"><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td width="56" valign="middle"><table cellpadding="0" cellspacing="0" border="0"><tr><td width="44" height="44" align="center" valign="middle" style="width:44px;height:44px;background:#e9e2d0;border-radius:12px;font-family:Helvetica,Arial,sans-serif;font-size:22px;color:#1c1c1a;line-height:44px;">&#10022;</td></tr></table></td><td valign="middle"><div style="${F}font-size:17px;font-weight:700;color:#eeece7;">Screen Free Rewards</div><div style="${F}font-size:12px;color:#9c9da0;margin-top:3px;">${esc(o.title)}</div></td><td align="right" valign="middle"><div style="${F}font-size:15px;font-weight:700;color:#eeece7;">${date}</div><div style="${F}font-size:12px;color:#9c9da0;margin-top:3px;">${esc(u.name)}</div></td></tr></table></td></tr><tr><td style="padding:0 26px;"><div style="height:3px;background:#d9cfb8;line-height:3px;font-size:0;">&nbsp;</div></td></tr><tr><td style="padding:16px 26px 8px 26px;"><span style="display:inline-block;background:#2b2d31;color:#d9cfb8;${F}font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:8px 14px;border-radius:2px;">${esc(o.title)}</span></td></tr><tr><td style="padding:0 26px 22px 26px;"><table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#202226;"><tr><td style="padding:4px 18px 8px 18px;"><table width="100%" cellpadding="0" cellspacing="0" border="0">${o.rows.map(r=>row(r[0],r[1],r[2])).join('')}</table></td></tr></table></td></tr><tr><td style="padding:0 26px 24px 26px;"><div style="border-top:1px solid #2b2d31;padding-top:14px;${F}font-size:12px;color:#9c9da0;line-height:1.6;">Open the app, sign in as a parent, then approve points under Overview and decide requests under Requests.<br>Screen Free Rewards &middot; v${APP_VERSION}</div></td></tr></table></td></tr></table></body></html>`;
+}
+// Fire and forget: tell the parents what the child just did (only to verified addresses)
+async function notifyEvent(kind,u,subject,title,rows){
+  try{
+    const n=(state.parent&&state.parent.notify)||{}; if(n[kind]===false) return;
+    const text=[title,'Child: '+u.name].concat(rows.map(r=>r[0]+': '+r[1])).concat(['','Open Screen Free Rewards, sign in as a parent to approve points and decide requests.','Screen Free Rewards v'+APP_VERSION]).join('\n');
+    await deliver(subject,text,u,{pdf:false,html:eventHTML(u,{title,rows})});
+  }catch(err){}
+}
 // One click: builds the summary, emails every saved parent and reports the result
 async function sendSummary(u, manual, test){
   const subject=(test?'[Test] ':'')+'Screen Free Rewards daily summary: '+u.name+', '+new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
   const body=summaryText(u);
-  if(manual && !validMailUrl(mailUrl())){
-    const link=(prompt('One-time setup. Paste your Screen Free Rewards mail link (it starts with https://script.google.com/macros/s/ and ends with /exec). Steps are in apps-script/SETUP.md.')||'').trim();
-    if(!link) return null;
-    if(!validMailUrl(link)){ alert('That does not look like a mail link. It should start with https://script.google.com/macros/s/ and end with /exec.'); return null; }
-    state.parent=state.parent||{}; state.parent.mailUrl=link; save(); renderParent();
-  }
+  if(manual && !ensureMailLink()) return null;
   if(!parentContacts().some(c=>c.email)){
     if(!manual) return null;
     const e=(prompt('Parent email to send to:')||'').trim();
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) { alert('Add a valid parent email first.'); return null; }
     state.parent=state.parent||{}; state.parent.email=e; save(); renderParent();
   }
+  if(manual){
+    for(const c of parentContacts().filter(c=>c.email&&!isVerified(c.email))){
+      try{ if(!(await verifyEmail(c.email))) { toast('Skipped '+c.email+' (not verified)'); } }catch(err){ alert('Could not verify '+c.email+': '+(err&&err.message||'offline')); }
+    }
+  }
   const r=await deliver(subject, body, u, {test});
   if(manual){
-    if(r.sent===r.results.length) toast('Email sent to '+r.emails.join(', '));
+    if(r.sent && r.sent===r.results.length) toast('Email sent to '+r.results.map(x=>x.email).join(', '));
     else { alert((r.sent?'Sent to some parents.':'Not sent.')+'\n'+r.lines.join('\n')+'\nCheck the internet connection and try again.'); if(!r.sent) mailtoFallback(r.emails, subject, body); }
   }
   return r;
@@ -767,7 +850,7 @@ function openAsk(asReward){
 document.getElementById('approvePending').onclick=()=>{ const u=getU(); if(!u) return; const n=Math.floor(u.pending||0); if(n<1) return; u.balance=(u.balance||0)+n; u.pending=(u.pending||0)-n; logA('points_approved','+'+n+' for '+u.name,'parent'); save(); renderParent(); updateUI(); toast(n+' points approved for '+u.name); };
 document.getElementById('addSched').onclick=()=>{ state.schedules.push({day:document.getElementById('schedDay').value,from:document.getElementById('schedFrom').value,to:document.getElementById('schedTo').value}); save(); renderParent(); };
 document.getElementById('addTask').onclick=()=>{ const u=getU(); const title=document.getElementById('taskTitle').value.trim(), pts=parseInt(document.getElementById('taskPts').value)||50; if(!title)return; u.tasks=u.tasks||[]; u.tasks.push({id:Date.now(),title,pts,status:'open'}); save(); renderParent(); updateUI(); };
-window.doneTask=id=>{ const u=getU(); const t=(u.tasks||[]).find(x=>x.id===id); if(!t)return; t.status='done'; u.balance=(u.balance||0)+t.pts; save(); updateUI(); renderParent(); };
+window.doneTask=id=>{ const u=getU(); const t=(u.tasks||[]).find(x=>x.id===id); if(!t)return; t.status='done'; u.balance=(u.balance||0)+t.pts; save(); updateUI(); renderParent(); notifyEvent('tasks',u,u.name+' completed a task: '+t.title,'Task completed',[['Child',u.name],['Task',t.title],['Points awarded','+'+t.pts,'#54cc88'],['New balance',Math.floor(u.balance||0)+' pts']]); };
 window.decideRequest=(id, ok)=>{
   const u=getU(); if(!u) return;
   const q=(u.requests||[]).find(x=>x.id===id);
@@ -884,11 +967,12 @@ document.getElementById('saveProfile').onclick = () => {
   state.parent.bothWorking = document.getElementById('bothWorking').checked;
   state.parent.interval = document.getElementById('emailInterval').value;
   state.parent.mailUrl = document.getElementById('mailUrl').value.trim();
+  state.parent.notify = {points:document.getElementById('nPoints').checked, tasks:document.getElementById('nTasks').checked};
   const pass = document.getElementById('pPass').value;
   if(pass) state.parent.password = pass;
   save();
   logA('profile_update', 'Parent profile saved', 'parent');
-  toast('Profile saved. Emails to parents go out automatically.');
+  toast('Profile saved. Emails to parents go out automatically.'); renderParent();
 };
 async function withBusy(id, label, fn){ const b=document.getElementById(id), t=b.textContent; b.disabled=true; b.textContent=label; try{ await fn(); } finally { b.disabled=false; b.textContent=t; } }
 document.getElementById('testEmail').onclick = () => { const u=getU(); if(u) withBusy('testEmail','Sending...',()=>sendSummary(u,true,true)); };
@@ -896,6 +980,11 @@ document.getElementById('emailSummary').onclick = () => { const u=getU(); if(u) 
 document.getElementById('previewSummary').onclick = () => { const u=getU(); if(!u) return; const w=window.open(URL.createObjectURL(new Blob([summaryHTML(u,{})],{type:'text/html'})),'_blank'); if(!w) alert('Allow pop-ups to preview the summary.'); };
 document.getElementById('pdfSummary').onclick = () => { const u=getU(); if(!u) return; const uri=summaryPdfFor(u,false), bin=atob(uri.split(',')[1]), arr=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([arr],{type:'application/pdf'})); a.download=pdfFileName(u); document.body.appendChild(a); a.click(); a.remove(); toast('PDF saved: '+pdfFileName(u)); };
+document.getElementById('shareSetup').onclick = async () => {
+  const link=mailUrl(); if(!validMailUrl(link)){ alert('Save the mail link first.'); return; }
+  const url=location.href.split('#')[0]+'#mail='+encodeURIComponent(link);
+  try{ await navigator.clipboard.writeText(url); toast('Family setup link copied'); }catch(e){ prompt('Copy this link and send it to other parents:', url); }
+};
 document.getElementById('enableNotes').onclick = async () => {
   if(!window.Notification) return alert('This browser cannot show alerts.');
   const p = await Notification.requestPermission();
@@ -910,9 +999,33 @@ document.getElementById('blockApps').onclick = () => {
   document.getElementById('remoteStatus').textContent = 'Block request logged. Native app required to enforce.';
 };
 document.querySelectorAll('[data-ver]').forEach(e=>e.textContent='Screen Free Rewards v'+APP_VERSION);
+function importMailHash(){ try{ const m=location.hash.match(/^#mail=(.+)$/); if(!m) return; const link=decodeURIComponent(m[1]); if(validMailUrl(link)){ state.parent=state.parent||{}; state.parent.mailUrl=link; save(); history.replaceState(null,'',location.pathname+location.search); } }catch(e){} }
 document.querySelectorAll('[data-ver-inline]').forEach(e=>e.textContent='v'+APP_VERSION);
+document.getElementById('doSetup').onclick=async()=>{
+  const v=id=>document.getElementById(id).value.trim(), okMail=e=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+  const email=v('sPEmail'), email2=v('sPEmail2'), pin=v('sPPin'), child=v('sChild'), cpin=v('sCPin');
+  if(!v('sPName')) return alert('Enter your name.');
+  if(!okMail(email)) return alert('Enter a valid email. Every notification is sent here.');
+  if(email2 && !okMail(email2)) return alert('The second parent email is not valid.');
+  if(email2 && emailKey(email2)===emailKey(email)) return alert('Use a different email for the second parent, or leave it empty.');
+  if(!/^\d{4,8}$/.test(pin)) return alert('The parent PIN must be 4 to 8 digits.');
+  if(!child) return alert("Enter your child's name.");
+  if(!/^\d{4,8}$/.test(cpin)) return alert('The child PIN must be 4 to 8 digits.');
+  if(cpin===pin) return alert('Use a different PIN for the child and the parent.');
+  const id=Date.now();
+  state.pin=pin;
+  const keepLink=(state.parent&&state.parent.mailUrl)||'';
+  state.parent={name:v('sPName'),email,phone:v('sPPhone'),name2:'',email2,phone2:'',bothWorking:true,interval:'daily',tokens:{},notify:{points:true,tasks:true},mailUrl:keepLink};
+  state.users=[{id,name:child,age:parseInt(v('sAge'))||8,pin:cpin,sessions:[],pending:0,balance:0,tasks:[],suggestions:[],requests:[],rewards:[{id:id+1,name:'Movie night',cost:100,desc:'Pick the film'}],appLog:[]}];
+  state.active=id; state.schedules=[{day:'weekday',from:'16:00',to:'21:00'},{day:'weekend',from:'10:00',to:'21:00'}]; state.log=[]; state.loggedIn=true; save();
+  logA('setup','Family set up for '+child,'parent'); show('childView'); startLoop();
+  if(validMailUrl(mailUrl())){
+    for(const e of [email,email2].filter(Boolean)){ try{ if(!(await verifyEmail(e))) toast('You can verify '+e+' later in Parent controls, Profile.'); }catch(err){ alert('Could not verify '+e+': '+(err&&err.message||'offline')+'. You can verify later in Parent controls, Profile.'); } }
+  } else toast('Setup done. Email notifications start once the app owner adds the mail link.');
+};
 load();
-if(!state.users.length){
+const DEMO=/[?&]demo=1/.test(location.search);
+if(!state.users.length && DEMO){
   const id=1;
   state.users.push({id,name:'Ava',age:9,pin:'1234',sessions:[{id:2,start:Date.now()-5400000,end:Date.now()-3600000,pts:30}],pending:12,balance:86,tasks:[{id:3,title:'Read a book this week',pts:50,status:'open'}],suggestions:[],requests:[],rewards:[{id:11,name:'Movie night',cost:40,desc:'Pick the film'},{id:12,name:'Family outing',cost:100,desc:'You choose the place'}],appLog:[]});
   state.active=id;
@@ -921,7 +1034,9 @@ if(!state.users.length){
   state.schedules=[{day:'weekday',from:'16:00',to:'21:00'}];
   save();
 }
-if(state.loggedIn && state.active){ show('childView'); startLoop(); } else show('loginView');
+importMailHash();
+if(!state.users.length) show('setupView');
+else if(state.loggedIn && state.active){ show('childView'); startLoop(); } else show('loginView');
 
 </script>
 </body>
