@@ -10,6 +10,10 @@ Open [index.html](index.html) in a browser. No install step. It is always the la
 
 Every day at 00:00 each parent gets an email with the summary of the day that just ended and the PDF report. It is always on. The app sends it when it is open at midnight and catches up (up to 3 days) when opened later. For families whose app is closed, the mail relay (version 4) sends it from the last numbers the child's device synced, after the owner runs `installMidnightTrigger` once. See `apps-script/SETUP.md`.
 
+## Emails in the child's voice
+
+In Profile (and on the first screen) choose whether your child calls each parent Dad, Mum or Mom. Every email is written as if the child wrote it: "Hi Dad!", a fun opening about the day, the task, the points or the request, and a sign-off from the child. Each parent gets their own greeting. The attached PDF is unchanged.
+
 ## Point value in INR and live approvals
 
 - **What a point is worth:** Parent controls, Rewards, "What one point is worth". Set rupees per point and the day it starts. It only applies to points that become usable from then on. Approved points keep the value they had, and past values are locked. The child, the emails and the PDF show the value.

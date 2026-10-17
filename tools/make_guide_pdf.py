@@ -8,7 +8,7 @@ from reportlab.lib.units import mm
 from reportlab.lib.colors import HexColor
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.platypus import BaseDocTemplate, PageTemplate, Frame, Paragraph, Spacer, Table, TableStyle, PageBreak, KeepTogether
-VERSION = sys.argv[1] if len(sys.argv) > 1 else "1.9.0"
+VERSION = sys.argv[1] if len(sys.argv) > 1 else "1.10.0"
 OUT = sys.argv[2] if len(sys.argv) > 2 else "."
 THEMES = {
  "dark": dict(bg="#161719", card="#202226", chip="#2b2d31", chipT="#d9cfb8", ink="#eeece7", mut="#9c9da0", line="#33363b", gold="#d6b260", warnbg="#2a2418", warn="#f2b45a"),
@@ -68,6 +68,7 @@ def build(theme):
           Spacer(1, 6), NOTE("<b>Welcome bonus.</b> Every new child starts with 50 points. It is added once when the child is created and counted as earned in that day's summary email."),
           Spacer(1, 6), NOTE("<b>What a point is worth (INR).</b> Parent controls, Rewards, What one point is worth. Set the amount in rupees for one point and the day it starts. The new value counts only for points that become usable from that day. Points already approved keep the value they had, and values in the past cannot be changed or removed. The child sees what their points are worth, and the emails and PDF show it."),
           Spacer(1, 6), NOTE("<b>Approving from your phone, live.</b> On a connected parent phone the Approvals card shows the child's usable points, points waiting and open requests. Approve or decline, and the child's screen updates within a few seconds while the page is open. Points become usable the moment they are approved; points waiting for approval cannot be spent."),
+          Spacer(1, 6), NOTE("<b>Emails in your child's voice.</b> In Profile (and on the first screen) choose whether your child calls you Dad, Mum or Mom. Every email is then written as if your child wrote it, with a fun greeting such as Hi Dad! and a sign-off from the child. Each parent gets their own greeting. It covers the daily summary, points and task emails, and requests. The attached PDF stays the same."),
           Spacer(1, 6), NOTE("<b>Family file.</b> Parent controls, Data, Download my data saves children, points, tasks and parents to a file. On a new device choose I have a family file on the first screen (or Load a family file in Data) to restore them. Email links, codes and pairing are never loaded from a file."),
           Spacer(1, 6), NOTE("<b>Put it on the phone.</b> Open the app address in the phone browser. Android Chrome: menu, Install app. iPhone Safari: Share, Add to Home Screen. It then opens full screen with its own icon and works offline. Android and iOS app projects are in the mobile folder of the package."),
           Spacer(1, 6), NOTE("<b>Siblings.</b> Add more children in Parent controls, Siblings. Each child has their own points, tasks, rewards, requests and PIN. They share the same device and the same parent emails."),

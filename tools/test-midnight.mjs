@@ -48,4 +48,12 @@ const snap=(date,uid='11',over={})=>({uid,date,name:'Vidyut',age:9,balance:80,pe
   ok(R.handle({action:'unpair',...A}).ok && !R.props.has('sent:'+A.roomId) && !R.props.has('room:'+A.roomId),'unpair removes room and sent record');
 }
 
+{ // voiced reports: each parent is greeted as Dad, Mum or by name
+  const R=makeRelay(); const {tok:t1,A}=family(R,'dad@example.com'); R.handle({action:'verify',email:'mum@example.com'}); const t2=R.handle({action:'confirm',email:'mum@example.com',code:R.codeFor('mum@example.com')}).token;
+  R.handle({action:'verify',email:'x@example.com'}); const t3=R.handle({action:'confirm',email:'x@example.com',code:R.codeFor('x@example.com')}).token; R.setNow('2026-10-17T10:00:00Z');
+  R.handle({action:'sync',...A,tz:'UTC',snaps:[snap('2026-10-17')],to:[{e:'dad@example.com',t:t1,n:'Suhas Janardanan',r:'dad'},{e:'mum@example.com',t:t2,n:'Divya Menon',r:'mum'},{e:'x@example.com',t:t3,n:'Alex Kim',r:'<script>'}]}); R.sent.length=0; R.setNow('2026-10-18T00:20:00Z');
+  ok(R.env.midnightSummaries()===3,'three parents get the report'); const by=e=>R.sent.find(m=>m.to===e);
+  ok(/>Hi Dad!</.test(by('dad@example.com').htmlBody) && /^Hi Dad!/.test(by('dad@example.com').body),'dad is greeted as Dad'); ok(/>Hi Mum!</.test(by('mum@example.com').htmlBody),'mum is greeted as Mum'); ok(/>Hi Alex!</.test(by('x@example.com').htmlBody) && !/<script>/.test(by('x@example.com').htmlBody),'an unknown role falls back to the first name and cannot inject');
+  ok(/Vidyut/.test(by('dad@example.com').htmlBody.match(/font-style:italic[^>]*>([^<]*)</)[1]) && by('dad@example.com').htmlBody.match(/font-size:15px;color:#1e293b;line-height:1.6;margin-top:6px;">([^<]*)</)[1]===by('mum@example.com').htmlBody.match(/font-size:15px;color:#1e293b;line-height:1.6;margin-top:6px;">([^<]*)</)[1].replace('Mum','Dad'),'same opening for both parents, written in the child\'s voice with a sign-off');
+}
 console.log(`midnight tests passed ${pass}, failed ${fail}`); process.exit(fail?1:0);

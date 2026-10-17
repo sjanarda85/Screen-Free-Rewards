@@ -1,5 +1,5 @@
 /**
- * Screen Free Rewards shared relay (Google Apps Script web app), version 5: email, device pairing, remote controls, the midnight daily summary and live approvals from a parent phone.
+ * Screen Free Rewards shared relay (Google Apps Script web app), version 5.1: email, device pairing, remote controls, the midnight daily summary and live approvals from a parent phone.
  *
  * One relay serves every family that uses the app. It is built so it cannot be used to spam:
  *  - A parent must verify their own email once with a 6-digit code. Only verified addresses can receive mail.
@@ -163,7 +163,7 @@ function storeDaily_(room, d) {
     var to = [];
     d.to.slice(0, 4).forEach(function (x) {
       var e = cleanEmail_(x && x.e);
-      if (e && x.t && String(x.t) === token_(e)) to.push({ e: e, n: clip_(x.n || '', 40) });
+      if (e && x.t && String(x.t) === token_(e)) to.push({ e: e, n: clip_(x.n || '', 40), r: /^(dad|mum|mom)$/.test(String(x.r || '')) ? String(x.r) : '' });
     });
     if (JSON.stringify(to) !== JSON.stringify(room.to || [])) { room.to = to; changed = true; }
   }
@@ -212,7 +212,22 @@ function esc_(s) {
 }
 
 // Dark report in the same layout as the app's email. Every dark panel also carries a bgcolor so Gmail keeps it.
-function dailyHtml_(s, day, note) {
+// The report is written in the child's voice. Same four openings as the app.
+var SUMMARY_VOICE = [
+  ['{c} here, reporting live from the screen-free zone! This is my day in numbers, in case you feel like being proud of me.', 'Squishy hugs, {c}'],
+  ['Ahoy, {t}! Your favourite kid has the daily report ready. No screens were harmed in the making of these numbers.', 'Over and out, {c}'],
+  ['Psst, {t}! It is me, {c}. I kept a diary of my screen-free adventures. The boring bits are numbers, the good bits stay in my head.', 'Love and high fives, {c}'],
+  ["Drumroll please! {c}'s daily report has arrived, {t}. I did my best. Mostly.", 'Your loyal reporter, {c}']
+];
+
+function voice_(role, name, child, seed) {
+  var t = role === 'dad' ? 'Dad' : role === 'mum' ? 'Mum' : role === 'mom' ? 'Mom' : (String(name || '').trim().split(/\s+/)[0] || 'there');
+  var row = SUMMARY_VOICE[Math.abs(seed | 0) % SUMMARY_VOICE.length];
+  function f(x) { return x.replace(/\{t\}/g, t).replace(/\{c\}/g, child); }
+  return { hi: 'Hi ' + t + '!', intro: f(row[0]), outro: f(row[1]) };
+}
+
+function dailyHtml_(s, day, note, v) {
   var F = 'font-family:Helvetica,Arial,sans-serif;';
   var C = { page: '#eaf0fb', card: '#ffffff', band: '#2563eb', band2: '#1d4ed8', bar: '#60a5fa', tile: '#f3f7ff', tl: '#dbe7ff', ink: '#0f172a', mut: '#64748b', line: '#e5eaf3', blue: '#1d4ed8', chip: '#e0ebff', box: '#f6f8fc', pos: '#059669', warn: '#b45309', foot: '#f1f5fb' };
   function sec(t) { return '<tr><td style="padding:22px 0 8px 0;"><span style="display:inline-block;background:' + C.chip + ';color:' + C.blue + ';' + F + 'font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:7px 14px;border-radius:999px;">' + t + '</span></td></tr>'; }
@@ -225,12 +240,14 @@ function dailyHtml_(s, day, note) {
   var open = s.open.length ? s.open.map(function (x) { return '&bull; <b>' + esc_(x.k) + '</b>: ' + esc_(x.n) + (x.c ? ' (' + x.c + ' pts)' : ''); }).join('<br>') : 'None.';
   var comment = esc_(s.name) + ' spent ' + s.mins + ' min screen free and earned ' + s.earned + ' points.' + (s.pending ? ' ' + s.pending + ' points are waiting for your approval.' : '');
   var band = 'background:' + C.band + ';background-image:linear-gradient(135deg,' + C.band2 + ',' + C.band + ' 60%,#3b82f6);';
-  var body = '<tr><td style="padding:18px 0 0 0;"><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>' + tile('Balance', s.balance, 'pts' + (s.val ? ' &middot; &#8377;' + s.val : ''), C.blue) + tile('Earned that day', '+' + s.earned, 'points', C.pos) + '</tr><tr>' + tile('Pending', s.pending, 'awaiting approval', s.pending ? C.warn : C.ink) + tile('Screen free', s.mins, 'of ' + s.scheduled + ' min', C.ink) + '</tr></table></td></tr>' +
+  var bubble = v ? '<tr><td style="padding:20px 0 4px 0;"><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#eef4ff" style="background:#eef4ff;border-left:5px solid ' + C.blue + ';border-radius:12px;padding:16px 20px;"><div style="' + F + 'font-size:24px;font-weight:700;color:' + C.blue + ';">' + esc_(v.hi) + '</div><div style="' + F + 'font-size:15px;color:#1e293b;line-height:1.6;margin-top:6px;">' + esc_(v.intro) + '</div></td></tr></table></td></tr>' : '';
+  var sign = v ? '<tr><td style="padding:18px 0 0 0;' + F + 'font-size:15px;font-style:italic;color:' + C.blue + ';">' + esc_(v.outro) + '</td></tr>' : '';
+  var body = bubble + '<tr><td style="padding:18px 0 0 0;"><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>' + tile('Balance', s.balance, 'pts' + (s.val ? ' &middot; &#8377;' + s.val : ''), C.blue) + tile('Earned that day', '+' + s.earned, 'points', C.pos) + '</tr><tr>' + tile('Pending', s.pending, 'awaiting approval', s.pending ? C.warn : C.ink) + tile('Screen free', s.mins, 'of ' + s.scheduled + ' min', C.ink) + '</tr></table></td></tr>' +
     sec('Child') + box(row('Name', esc_(s.name)) + row('Age', s.age ? String(s.age) : '-') + row('Status', status, s.open.length ? C.warn : C.pos, true)) +
     sec('Points') + box(row('Balance', s.balance + ' pts' + (s.val ? ' &middot; &#8377;' + s.val : ''), C.blue, true) + (s.rate ? row('Point value', '1 point = &#8377;' + s.rate) : '') + row('Pending approval', s.pending + ' pts', s.pending ? C.warn : null) + row('Earned that day', '+' + s.earned + ' pts', C.pos)) +
     sec('Screen-free time') + box(row('Scheduled', s.scheduled + ' min') + row('Actual timer', s.mins + ' min', C.blue, true) + row('Unused', unused + ' min')) +
     sec('Open requests (' + s.open.length + ')') + text(open) + sec('Open tasks (' + s.tasks.length + ')') + text(tasks) +
-    sec('Commentary') + text(comment + (note ? '<br><span style="color:' + C.mut + ';">' + esc_(note) + '</span>' : ''));
+    sec('Commentary') + text(comment + (note ? '<br><span style="color:' + C.mut + ';">' + esc_(note) + '</span>' : '')) + sign;
   return '<!doctype html><html style="background:' + C.page + ';color-scheme:light only;"><head><meta charset="utf-8"><meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light"></head><body bgcolor="' + C.page + '" style="margin:0;padding:0;background:' + C.page + ';">' +
     '<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="' + C.page + '" style="background:' + C.page + ';"><tr><td align="center" style="padding:28px 12px;">' +
     '<table width="640" cellpadding="0" cellspacing="0" border="0" bgcolor="' + C.card + '" style="width:100%;max-width:640px;background:' + C.card + ';border-radius:14px;border:1px solid ' + C.tl + ';">' +
@@ -244,11 +261,11 @@ function dailyHtml_(s, day, note) {
     '</table></td></tr></table></body></html>';
 }
 
-function dailyText_(s, day) {
-  return [APP_NAME + ' - Daily summary', 'Child: ' + s.name + (s.age ? ' (' + s.age + ')' : ''), 'Day: ' + day, '',
+function dailyText_(s, day, v) {
+  return (v ? [v.hi, v.intro, ''] : []).concat([APP_NAME + ' - Daily summary', 'Child: ' + s.name + (s.age ? ' (' + s.age + ')' : ''), 'Day: ' + day, '',
     'Balance: ' + s.balance + ' pts', 'Pending approval: ' + s.pending + ' pts', 'Earned that day: ' + s.earned + ' pts',
     'Screen free: ' + s.mins + ' of ' + s.scheduled + ' min', 'Open requests: ' + s.open.length, 'Open tasks: ' + s.tasks.length, '',
-    'Open the app and sign in as a parent to approve points and decide requests.'].join('\n');
+    'Open the app and sign in as a parent to approve points and decide requests.'], v ? ['', v.outro] : []).join('\n');
 }
 
 function dailyPdf_(s, day) {
@@ -290,7 +307,8 @@ function midnightSummaries() {
       room.to.forEach(function (t) {
         var to = cleanEmail_(t.e);
         if (!to || !allow_('send:' + to, MAX_SENDS_PER_ADDRESS_PER_DAY) || !allow_('all', MAX_EMAILS_PER_DAY)) return;
-        var mail = { to: to, subject: APP_NAME + ' daily summary: ' + snap.name + ', ' + yest, body: dailyText_(snap, yest), htmlBody: dailyHtml_(snap, yest, note), name: APP_NAME };
+        var vc = voice_(t.r, t.n, snap.name, Math.floor(Date.UTC(+yest.slice(0, 4), +yest.slice(5, 7) - 1, +yest.slice(8, 10)) / 86400000));
+        var mail = { to: to, subject: APP_NAME + ' daily summary: ' + snap.name + ', ' + yest, body: dailyText_(snap, yest, vc), htmlBody: dailyHtml_(snap, yest, note, vc), name: APP_NAME };
         if (pdf) mail.attachments = [pdf];
         try { MailApp.sendEmail(mail); sentAny = true; count++; } catch (err) { /* quota or address problem: try the others */ }
       });
