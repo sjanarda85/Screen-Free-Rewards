@@ -413,12 +413,7 @@ body.is-locked { overflow: hidden; }
       <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:8px 0 2px;"><input id="nPoints" type="checkbox" style="width:auto;"> Email me when points are earned</label>
       <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:2px 0;"><input id="nTasks" type="checkbox" style="width:auto;"> Email me when a task is completed</label>
       <p style="font-size:12px;color:rgb(var(--muted));margin:2px 0 8px;">Requests and redeem requests are always emailed.</p>
-      <label style="font-size:12px;color:rgb(var(--muted));">Send log every</label>
-      <select id="emailInterval">
-        <option value="off">Off</option>
-        <option value="daily">Daily</option>
-        <option value="weekly">Weekly</option>
-      </select>
+      <div class="banner" id="midnightRule" style="margin:10px 0;"><b>Rule: daily summary at midnight.</b> At 00:00 every day each parent gets the summary of the day that just ended, with the PDF report. This is always on. <span id="midnightStatus" style="display:block;margin-top:4px;color:rgb(var(--muted));font-size:12px;"></span></div>
       <div id="mailLinkBox"><label style="font-size:12px;color:rgb(var(--muted));">Mail link (app owner only, from apps-script/SETUP.md)</label>
       <input id="mailUrl" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off"></div>
       <div id="verifyList" style="margin:6px 0 2px;"></div>
@@ -496,7 +491,7 @@ body.is-locked { overflow: hidden; }
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
 function newPdf(){ if(!window.jspdf){ alert('PDF tools could not load. Check the internet connection and try again.'); return null; } return new window.jspdf.jsPDF(); }
-const APP_VERSION='1.6.1';
+const APP_VERSION='1.7.0';
 const SIGNUP_BONUS=50;
 function giveBonus(u,pts,why){ u.balance=(u.balance||0)+pts; (u.bonuses=u.bonuses||[]).push({ts:Date.now(),pts,why}); logA('bonus',u.name+' +'+pts+' pts, '+why,'sys'); }
 let state = {users:[], active:null, pin:'1234', rate:1, schedules:[], log:[], loggedIn:false};
@@ -520,8 +515,8 @@ function windowMinutes(w){
   const [fh,fm]=w.from.split(':').map(Number), [th,tm]=w.to.split(':').map(Number);
   let from=fh*60+fm, to=th*60+tm; if(to<=from) to+=1440; return to-from;
 }
-function getTodayWindows(){
-  const day=new Date().getDay(), isWkd=day>=1&&day<=5;
+function getTodayWindows(when){
+  const day=(when||new Date()).getDay(), isWkd=day>=1&&day<=5;
   return state.schedules.filter(s=> (s.day==='weekday'?isWkd:s.day==='weekend'?!isWkd:true));
 }
 
@@ -638,7 +633,7 @@ function renderParent(){
     document.getElementById('pEmail2').value = state.parent.email2||'';
     document.getElementById('pPhone2').value = state.parent.phone2||'';
     document.getElementById('bothWorking').checked = state.parent.bothWorking!==false;
-    document.getElementById('emailInterval').value = state.parent.interval||'off';
+    renderMidnightStatus();
     document.getElementById('mailUrl').value = state.parent.mailUrl||'';
     document.getElementById('nPoints').checked = (state.parent.notify||{}).points!==false;
     document.getElementById('nTasks').checked = (state.parent.notify||{}).tasks!==false;
@@ -691,25 +686,27 @@ function parentContacts(){
   return list;
 }
 function dayKey(d){ return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
-function summaryData(u){
-  const t0=new Date(); t0.setHours(0,0,0,0); const t=t0.getTime();
-  const sess=(u.sessions||[]).filter(s=>s.start>=t), reqs=u.requests||[];
+function summaryData(u,day){
+  const past=!!day, bd=day?day.split('-').map(Number):null;
+  const t0=past?new Date(bd[0],bd[1]-1,bd[2]):new Date(); if(!past) t0.setHours(0,0,0,0); const t=t0.getTime(), t1=past?new Date(bd[0],bd[1]-1,bd[2]+1).getTime():Infinity;
+  const sess=(u.sessions||[]).filter(s=>s.start>=t&&s.start<t1), reqs=u.requests||[];
   const mins=sess.reduce((a,s)=>a+Math.floor((s.end-s.start)/60000),0);
-  const scheduled=getTodayWindows().reduce((a,w)=>a+windowMinutes(w),0);
-  return { name:u.name, age:u.age, date:new Date(), balance:Math.floor(u.balance||0), pending:Math.floor(u.pending||0),
-    earned:sess.reduce((a,s)=>a+(s.pts||0),0)+(u.bonuses||[]).filter(b=>b.ts>=t).reduce((a,b)=>a+(b.pts||0),0), mins, scheduled, unused:Math.max(0,scheduled-mins),
-    redeemed:reqs.filter(r=>r.kind==='redeem'&&r.ts>=t&&r.status!=='declined').reduce((a,r)=>a+(r.cost||0),0),
+  const scheduled=getTodayWindows(past?new Date(bd[0],bd[1]-1,bd[2],12):null).reduce((a,w)=>a+windowMinutes(w),0);
+  return { past, name:u.name, age:u.age, date:past?new Date(bd[0],bd[1]-1,bd[2],12):new Date(), balance:Math.floor(u.balance||0), pending:Math.floor(u.pending||0),
+    earned:sess.reduce((a,s)=>a+(s.pts||0),0)+(u.bonuses||[]).filter(b=>b.ts>=t&&b.ts<t1).reduce((a,b)=>a+(b.pts||0),0), mins, scheduled, unused:Math.max(0,scheduled-mins),
+    redeemed:reqs.filter(r=>r.kind==='redeem'&&r.ts>=t&&r.ts<t1&&r.status!=='declined').reduce((a,r)=>a+(r.cost||0),0),
     open:reqs.filter(r=>r.status==='pending'), tasks:(u.tasks||[]).filter(x=>x.status!=='done'),
-    log:state.log.filter(l=>l.ts>=t && !/^(parent_alert|email|email_sent|email_fail|login|parent_login)$/.test(l.t)).slice(0,8) };
+    log:state.log.filter(l=>l.ts>=t && l.ts<t1 && !/^(parent_alert|email|email_sent|email_fail|login|parent_login)$/.test(l.t)).slice(0,8) };
 }
-function summaryText(u){
-  const d=summaryData(u), L=[];
+function pastWords(x,d){ return d&&d.past?String(x).replace(/\bTODAY\b/g,'THAT DAY').replace(/\btoday\b/g,'that day'):x; }
+function summaryText(u,day){
+  const d=summaryData(u,day), L=[];
   L.push('Screen Free Rewards - Daily summary','Child: '+d.name+(d.age?' ('+d.age+')':''),'Date: '+d.date.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}),'');
   L.push('POINTS','Balance: '+d.balance+' pts','Pending approval: '+d.pending+' pts','Earned today: '+d.earned+' pts','Redeemed today: '+d.redeemed+' pts','');
   L.push('SCREEN-FREE TIME','Scheduled: '+d.scheduled+' min','Actual timer: '+d.mins+' min','Unused: '+d.unused+' min','');
   L.push('OPEN REQUESTS ('+d.open.length+')'); d.open.forEach(r=>L.push('- '+r.kind+': '+r.name+(r.cost?' ('+r.cost+' pts)':''))); if(!d.open.length) L.push('None.');
   L.push('','Open Screen Free Rewards, sign in as a parent, then approve points and requests.','Screen Free Rewards v'+APP_VERSION);
-  return L.join('\n');
+  return pastWords(L.join('\n'),d);
 }
 // Gmail and other clients drop style backgrounds, which leaves light text on white. Repeat every dark
 // background as a bgcolor attribute and a gradient image, and declare the message dark.
@@ -717,9 +714,9 @@ function darkProof(html){
   html=html.replace(/<(table|td|div)\b([^>]*?)style="([^"]*?)background:(#[0-9a-fA-F]{6});([^"]*)"([^>]*)>/g,(m,t,a,pre,c,post,rest)=>'<'+t+a+(/bgcolor=/.test(a+rest)?'':' bgcolor="'+c+'"')+' style="'+pre+'background:'+c+';background-image:linear-gradient('+c+','+c+');'+post+'"'+rest+'>');
   return html.replace('<!doctype html><html><body style="','<!doctype html><html style="background:#161719;color-scheme:dark;"><head><meta charset="utf-8"><meta name="color-scheme" content="dark"><meta name="supported-color-schemes" content="dark"></head><body bgcolor="#161719" style="');
 }
-function summaryHTML(u,opts){ return darkProof(summaryHTMLraw(u,opts)); }
+function summaryHTML(u,opts){ opts=opts||{}; return darkProof(pastWords(summaryHTMLraw(u,opts),{past:!!opts.day})); }
 function summaryHTMLraw(u,opts){
-  opts=opts||{}; const d=summaryData(u);
+  opts=opts||{}; const d=summaryData(u,opts.day);
   const F='font-family:Helvetica,Arial,sans-serif;';
   const sec=t=>`<tr><td style="padding:18px 0 0 0;"><span style="display:inline-block;background:#2b2d31;color:#d9cfb8;${F}font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:8px 14px;border-radius:2px;">${t}</span></td></tr>`;
   const row=(l,v,c,b)=>`<tr><td style="padding:9px 0;border-bottom:1px solid #2b2d31;${F}font-size:14px;color:${b?'#eeece7':'#9c9da0'};font-weight:${b?700:400};">${l}</td><td align="right" style="padding:9px 0;border-bottom:1px solid #2b2d31;${F}font-size:14px;font-weight:${b||c?700:400};color:${c||'#eeece7'};">${v}</td></tr>`;
@@ -772,7 +769,7 @@ function buildSummaryPdf(d, theme, opts){
   const fillRect=(x,top,w,hh,c)=>ops.push(rgb(T[c]||c)+' rg '+f(x)+' '+f(Y(top+hh))+' '+f(w)+' '+f(hh)+' re f');
   const rr=(x,top,w,hh,r,fc,sc)=>{ const y=Y(top+hh), k=r*0.5523; r=Math.min(r,w/2,hh/2); const p=[f(x+r)+' '+f(y)+' m',f(x+w-r)+' '+f(y)+' l',f(x+w-r+k)+' '+f(y)+' '+f(x+w)+' '+f(y+r-k)+' '+f(x+w)+' '+f(y+r)+' c',f(x+w)+' '+f(y+hh-r)+' l',f(x+w)+' '+f(y+hh-r+k)+' '+f(x+w-r+k)+' '+f(y+hh)+' '+f(x+w-r)+' '+f(y+hh)+' c',f(x+r)+' '+f(y+hh)+' l',f(x+r-k)+' '+f(y+hh)+' '+f(x)+' '+f(y+hh-r+k)+' '+f(x)+' '+f(y+hh-r)+' c',f(x)+' '+f(y+r)+' l',f(x)+' '+f(y+r-k)+' '+f(x+r-k)+' '+f(y)+' '+f(x+r)+' '+f(y)+' c','h'];
     ops.push((fc?rgb(T[fc])+' rg ':'')+(sc?rgb(T[sc])+' RG 0.8 w ':'')+p.join(' ')+(fc&&sc?' B':fc?' f':' S')); };
-  const text=(s,x,base,size,c,bold,align,spc)=>{ s=pdfSan(s); const w=pdfWidth(s,size,bold,spc); if(align==='r') x-=w;
+  const text=(s,x,base,size,c,bold,align,spc)=>{ s=pdfSan(pastWords(s,d)); const w=pdfWidth(s,size,bold,spc); if(align==='r') x-=w;
     ops.push('BT /'+(bold?'F2':'F1')+' '+size+' Tf '+rgb(T[c])+' rg '+f(spc||0)+' Tc 1 0 0 1 '+f(x)+' '+f(Y(base))+' Tm ('+pdfEsc(s)+') Tj ET'); };
   const star=(cx,cy,r,c)=>{ const k=.18, p=[[0,-r],[r*k,-r*k],[r,0],[r*k,r*k],[0,r],[-r*k,r*k],[-r,0],[-r*k,-r*k]]; ops.push(rgb(T[c])+' rg '+p.map((q,i)=>f(cx+q[0])+' '+f(Y(cy+q[1]))+(i?' l':' m')).join(' ')+' h f'); };
   const gradRule=(x,top,w,hh,c1,c2)=>{ const a=T[c1], b=T[c2], n=48; for(let i=0;i<n;i++){ const m=i/(n-1), c='#'+[1,3,5].map(j=>Math.round(parseInt(a.slice(j,j+2),16)*(1-m)+parseInt(b.slice(j,j+2),16)*m).toString(16).padStart(2,'0')).join(''); fillRect(x+w*i/n,top,w/n+.6,hh,c); } };
@@ -816,9 +813,9 @@ function buildSummaryPdf(d, theme, opts){
   const xr=out.length; out+='xref\n0 '+(objs.length+1)+'\n0000000000 65535 f \n'+offs.map(o=>String(o).padStart(10,'0')+' 00000 n \n').join('')+'trailer\n<< /Size '+(objs.length+1)+' /Root 1 0 R >>\nstartxref\n'+xr+'\n%%EOF';
   return 'data:application/pdf;base64,'+btoa(out);
 }
-function summaryForPdf(u){ const s=summaryData(u); return Object.assign({},s,{dateStr:s.date.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}), log:s.log.map(l=>({t:l.t,d:l.d,time:new Date(l.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}))}); }
-function summaryPdfFor(u,test){ return buildSummaryPdf(summaryForPdf(u),'dark',{test:!!test}); }
-function pdfFileName(u){ const s=summaryData(u); return 'screen-free-rewards_summary_'+String(u.name).toLowerCase().replace(/[^a-z0-9]+/g,'-')+'_'+s.date.toISOString().slice(0,10)+'.pdf'; }
+function summaryForPdf(u,day){ const s=summaryData(u,day); return Object.assign({},s,{dateStr:s.date.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}), log:s.log.map(l=>({t:l.t,d:l.d,time:new Date(l.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}))}); }
+function summaryPdfFor(u,test,day){ return buildSummaryPdf(summaryForPdf(u,day),'dark',{test:!!test}); }
+function pdfFileName(u,day){ return 'screen-free-rewards_summary_'+String(u.name).toLowerCase().replace(/[^a-z0-9]+/g,'-')+'_'+(day||dayStr())+'.pdf'; }
 async function relayCall(payload){
   const link=mailUrl(); if(!validMailUrl(link)) throw new Error('mail link not set');
   let lastErr;
@@ -865,7 +862,7 @@ async function deliver(subject, body, u, opts){
   if(window.Notification && Notification.permission==='granted'){ try { new Notification(subject, { body: body.slice(0, 180) }); } catch(e){} }
   const results=[]; if(!emails.length || !validMailUrl(mailUrl())) return {emails, results, lines:[], sent:0, noLink:!validMailUrl(mailUrl())};
   if(!emails.some(isVerified)) return {emails, results, lines:emails.map(e=>e+': not verified yet'), sent:0, unverified:true};
-  const att=opts.pdf===false?null:{name:pdfFileName(u), uri:summaryPdfFor(u,opts.test)}, html=opts.html||summaryHTML(u,{test:opts.test,pdf:true});
+  const att=opts.pdf===false?null:{name:pdfFileName(u,opts.day), uri:summaryPdfFor(u,opts.test,opts.day)}, html=opts.html||summaryHTML(u,{test:opts.test,pdf:true,day:opts.day});
   for(const email of emails){
     let ok=false, msg='';
     if(!isVerified(email)){ results.push({email, ok:false, msg:'not verified yet'}); continue; }
@@ -903,9 +900,10 @@ async function notifyEvent(kind,u,subject,title,rows){
   }catch(err){}
 }
 // One click: builds the summary, emails every saved parent and reports the result
-async function sendSummary(u, manual, test){
-  const subject=(test?'[Test] ':'')+'Screen Free Rewards daily summary: '+u.name+', '+new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
-  const body=summaryText(u);
+async function sendSummary(u, manual, test, day){
+  const when=day?new Date(+day.slice(0,4),+day.slice(5,7)-1,+day.slice(8,10),12):new Date();
+  const subject=(test?'[Test] ':'')+'Screen Free Rewards daily summary: '+u.name+', '+when.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
+  const body=summaryText(u,day);
   if(manual && !ensureMailLink()) return null;
   if(!parentContacts().some(c=>c.email)){
     if(!manual) return null;
@@ -918,19 +916,14 @@ async function sendSummary(u, manual, test){
       try{ if(!(await verifyEmail(c.email))) { toast('Skipped '+c.email+' (not verified)'); } }catch(err){ alert('Could not verify '+c.email+': '+(err&&err.message||'offline')); }
     }
   }
-  const r=await deliver(subject, body, u, {test});
+  const r=await deliver(subject, body, u, {test,day});
   if(manual){
     if(r.sent && r.sent===r.results.length) toast('Email sent to '+r.results.map(x=>x.email).join(', '));
     else { alert((r.sent?'Sent to some parents.':'Not sent.')+'\n'+r.lines.join('\n')+'\nCheck the internet connection and try again.'); if(!r.sent) mailtoFallback(r.emails, subject, body); }
   }
   return r;
 }
-function maybeAutoSummary(){
-  const p=state.parent; if(!p||!p.interval||p.interval==='off') return;
-  const now=new Date(); if(now.getHours()<20) return; if(p.interval==='weekly'&&now.getDay()!==0) return;
-  const key=dayKey(now); if(p.lastSent===key) return;
-  p.lastSent=key; save(); state.users.forEach(u=>sendSummary(u,false,false));
-}
+function maybeAutoSummary(){ dailyRule(); }
 function openRedeem(){
   const u=getU(); if(!u) return;
   const list=(u.rewards||[]);
@@ -1059,7 +1052,7 @@ document.getElementById('saveProfile').onclick = () => {
   state.parent.email2 = document.getElementById('pEmail2').value.trim();
   state.parent.phone2 = document.getElementById('pPhone2').value.trim();
   state.parent.bothWorking = document.getElementById('bothWorking').checked;
-  state.parent.interval = document.getElementById('emailInterval').value;
+  state.parent.interval = 'daily';
   state.parent.mailUrl = document.getElementById('mailUrl').value.trim();
   state.parent.notify = {points:document.getElementById('nPoints').checked, tasks:document.getElementById('nTasks').checked};
   const pass = document.getElementById('pPass').value;
@@ -1109,7 +1102,7 @@ document.getElementById('doSetup').onclick=async()=>{
   const id=Date.now();
   state.pin=pin;
   const keepLink=(state.parent&&state.parent.mailUrl)||'';
-  state.parent={name:v('sPName'),email,phone:v('sPPhone'),name2:v('sPName2'),email2,phone2:'',bothWorking:true,interval:'daily',tokens:{},notify:{points:true,tasks:true},mailUrl:keepLink};
+  state.parent={name:v('sPName'),email,phone:v('sPPhone'),name2:v('sPName2'),email2,phone2:'',bothWorking:true,interval:'daily',tokens:{},notify:{points:true,tasks:true},mailUrl:keepLink,lastDaily:dayStr(new Date(Date.now()-86400000))};
   state.users=[{id,name:child,age:parseInt(v('sAge'))||8,pin:cpin,sessions:[],pending:0,balance:0,tasks:[],suggestions:[],requests:[],rewards:[{id:id+1,name:'Movie night',cost:100,desc:'Pick the film'}],appLog:[]}];
   state.active=id; state.schedules=[{day:'weekday',from:'16:00',to:'21:00'},{day:'weekend',from:'10:00',to:'21:00'}]; state.log=[]; state.loggedIn=true; save();
   logA('setup','Family set up for '+child,'parent'); giveBonus(state.users[0],SIGNUP_BONUS,'welcome bonus'); show('childView'); startLoop();
@@ -1188,7 +1181,7 @@ async function syncNow(){
   try{
     if(state.controlsDirty){ try{ const r0=await relayCall({action:'ctrl-set',roomId:state.device.roomId,secret:state.device.secret,controls:ctl(),by:ctl().by}); state.controls=r0.controls; state.controlsDirty=false; }catch(e){} }
     const u=getU(), date=dayStr(), payload={action:'sync',roomId:state.device.roomId,secret:state.device.secret,date,name:u?u.name:undefined};
-    if(u){ const rec=localDays(u)[date]; payload.usage={date,src:'app',inApp:rec.inApp,apps:rec.appsApp}; }
+    if(u){ const rec=localDays(u)[date]; payload.usage={date,src:'app',inApp:rec.inApp,apps:rec.appsApp}; payload.snaps=state.users.map(snapFor); payload.to=mailTargets(); payload.tz=(Intl.DateTimeFormat().resolvedOptions().timeZone||''); }
     const r=await relayCall(payload); state.device.lastSync=Date.now(); state.device.parents=r.parents||[];
     if(r.controls&&!state.controlsDirty) state.controls=r.controls;
     if(r.companion&&u){ const d=usageDay(u,date); d.total=r.companion.total; d.apps=r.companion.apps||[]; d.src='companion'; }
@@ -1307,7 +1300,7 @@ function cleanFamily(raw){
   c.users=c.users.filter(u=>u&&typeof u.name==='string'&&u.name.trim()).map(u=>Object.assign({sessions:[],pending:0,balance:0,tasks:[],suggestions:[],requests:[],rewards:[],appLog:[]},u,{id:u.id||Date.now()+Math.floor(Math.random()*1e6)}));
   if(!c.users.length) throw new Error('The file has no children.');
   c.pin=String(c.pin||'1234'); c.schedules=Array.isArray(c.schedules)?c.schedules:[]; c.log=Array.isArray(c.log)?c.log:[];
-  c.parent=Object.assign({tokens:{},notify:{points:true,tasks:true},bothWorking:true,interval:'daily'},c.parent||{},{tokens:{}});
+  c.parent=Object.assign({tokens:{},notify:{points:true,tasks:true},bothWorking:true},c.parent||{},{tokens:{},interval:'daily',dailyDone:{},dailyRetryAt:0,dailyTries:0,lastDaily:dayStr(new Date(Date.now()-86400000))});
   if(c.parent.mailUrl && !validMailUrl(c.parent.mailUrl)) c.parent.mailUrl='';
   c.active=c.users[0].id; c.loggedIn=false; return c;
 }
@@ -1341,6 +1334,61 @@ window.delSchedule=i=>{ const s=state.schedules[i]; if(!s||!confirm('Delete this
 window.delChild=id=>{ const c=state.users.find(x=>x.id===id); if(!c) return; if(state.users.length<2){ alert('This is the only child. Add another child first, or use Data, Erase everything.'); return; } if(!confirm('Delete '+c.name+' and all of their points, tasks, rewards, requests and history? This cannot be undone.')) return; state.users=state.users.filter(x=>x.id!==id); if(state.active===id) state.active=state.users[0].id; logA('child_delete',c.name,'parent'); refreshAll(); };
 window.delAppLog=ts=>{ const u=getU(), a=(u.appLog||[]).find(x=>x.ts===ts); if(!a||!confirm('Delete this logged app time?')) return; u.appLog=u.appLog.filter(x=>x.ts!==ts); logA('app_log_delete',a.name,'parent'); refreshAll(); };
 if('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && !/[?&]nosw=1/.test(location.search)) window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+// =====================================================================================================
+// v1.7: rule, the summary of every finished day is emailed to the parents at midnight
+// =====================================================================================================
+function shiftDay(day,n){ const a=day.split('-').map(Number); return dayStr(new Date(a[0],a[1]-1,a[2]+n,12)); }
+function dailyDays(){
+  const p=state.parent; if(!p) return [];
+  const yest=shiftDay(dayStr(),-1);
+  if(!p.lastDaily){ p.lastDaily=yest; save(); return []; }
+  const days=[]; let d=yest; while(d>p.lastDaily && days.length<3){ days.unshift(d); d=shiftDay(d,-1); }
+  return days;
+}
+function renderMidnightStatus(){
+  const el=document.getElementById('midnightStatus'); if(!el) return; const p=state.parent||{};
+  const mailOk=validMailUrl(mailUrl()), ver=parentContacts().some(c=>c.email&&isVerified(c.email));
+  el.textContent=(p.lastDaily?'Last report sent for '+p.lastDaily+'. ':'No report sent yet. ')+'Next at 00:00. '+(!mailOk?'Waiting for the mail link from the app owner.':!ver?'Verify a parent email so it can be delivered.':'');
+}
+// Sends one child's report for one finished day. Returns 'done', 'skip' or 'retry'.
+async function sendDay(u,day){
+  const p=state.parent; p.dailyDone=p.dailyDone||{}; const key=day+':'+u.id;
+  if(p.dailyDone[key]) return 'done';
+  if(!validMailUrl(mailUrl())||!parentContacts().some(c=>c.email&&isVerified(c.email))){ p.dailyDone[key]=1; logA('daily_skipped',u.name+' '+day+' (no verified parent email)','sys'); return 'skip'; }
+  let claimed=false;
+  if(paired()){
+    try{ const c=await relayCall({action:'daily-claim',roomId:state.device.roomId,secret:state.device.secret,key}); if(!c.claimed){ p.dailyDone[key]=1; return 'done'; } claimed=true; }
+    catch(err){ if(!/not paired/.test(err&&err.message||'')) return 'retry'; }
+  }
+  const r=await sendSummary(u,false,false,day);
+  if(r&&r.sent){ p.dailyDone[key]=1; logA('daily_summary','Sent for '+u.name+', '+day,'sys'); return 'done'; }
+  if(claimed){ try{ await relayCall({action:'daily-release',roomId:state.device.roomId,secret:state.device.secret,key}); }catch(e){} }
+  return 'retry';
+}
+let _dailyBusy=false;
+async function dailyRule(){
+  const p=state.parent; if(!p||_dailyBusy||state.role==='parent'||!state.users.length) return;
+  if(p.dailyRetryAt && Date.now()<p.dailyRetryAt) return;
+  const days=dailyDays(); if(!days.length) return;
+  _dailyBusy=true;
+  try{
+    let ok=true;
+    for(const day of days){
+      for(const u of state.users){ if((await sendDay(u,day))==='retry'){ ok=false; break; } }
+      if(!ok) break;
+      p.lastDaily=day; save();
+    }
+    if(ok){ p.dailyTries=0; p.dailyRetryAt=0; const keep=shiftDay(dayStr(),-8); Object.keys(p.dailyDone||{}).forEach(k=>{ if(k.slice(0,10)<keep) delete p.dailyDone[k]; }); }
+    else { p.dailyTries=(p.dailyTries||0)+1; if(p.dailyTries>=12){ p.lastDaily=shiftDay(dayStr(),-1); p.dailyTries=0; p.dailyRetryAt=0; logA('daily_giveup','Could not deliver the midnight summary after 12 tries','sys'); } else p.dailyRetryAt=Date.now()+5*60000; }
+    save(); renderMidnightStatus();
+  }catch(err){} finally{ _dailyBusy=false; }
+}
+window.dailyRule=dailyRule;
+if(!window._dailyT){ window._dailyT=setInterval(dailyRule,10000); document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') dailyRule(); }); }
+// compact copy of today's numbers for the relay, so it can send the midnight report while the app is closed
+function snapFor(u){ const d=summaryData(u); return {uid:String(u.id),date:dayStr(),name:u.name,age:u.age||0,balance:d.balance,pending:d.pending,earned:d.earned,mins:d.mins,scheduled:d.scheduled,tasks:d.tasks.slice(0,5).map(x=>({t:String(x.title).slice(0,40),p:x.pts})),open:d.open.slice(0,4).map(r=>({k:r.kind,n:String(r.name).slice(0,40),c:r.cost||0}))}; }
+function mailTargets(){ return parentContacts().filter(c=>c.email&&isVerified(c.email)).map(c=>({e:c.email,t:tokenFor(c.email),n:c.name})); }
+
 load();
 const DEMO=/[?&]demo=1/.test(location.search);
 if(!state.users.length && DEMO){

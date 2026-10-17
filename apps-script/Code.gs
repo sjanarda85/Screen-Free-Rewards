@@ -1,5 +1,5 @@
 /**
- * Screen Free Rewards shared relay (Google Apps Script web app), version 3: email, device pairing and remote controls.
+ * Screen Free Rewards shared relay (Google Apps Script web app), version 4: email, device pairing, remote controls and the midnight daily summary.
  *
  * One relay serves every family that uses the app. It is built so it cannot be used to spam:
  *  - A parent must verify their own email once with a 6-digit code. Only verified addresses can receive mail.
@@ -19,6 +19,11 @@
  *   { action: 'sync-pull', roomId, secret }                       parent phone reads usage, controls and last seen
  *   { action: 'ctrl-set', roomId, secret, controls }              parent sets deviceLocked, message, lockedApps
  *   { action: 'unpair', roomId, secret }                          deletes the room
+ *   { action: 'daily-claim' | 'daily-release', roomId, secret, key }   whoever claims 'YYYY-MM-DD:childId' first sends that day's report
+ *
+ * Midnight summary while the app is closed: the child app keeps a small copy of each child's numbers in the room (sync).
+ * Run installMidnightTrigger() once from the editor; the hourly trigger midnightSummaries() then emails every parent
+ * the report of the day that just ended, in the family's own time zone, unless the app already sent it.
  * Setup: apps-script/SETUP.md
  */
 
@@ -47,6 +52,8 @@ function doPost(e) {
     if (action === 'sync') return out(sync_(d));
     if (action === 'sync-pull') return out(syncPull_(d));
     if (action === 'ctrl-set') return out(ctrlSet_(d));
+    if (action === 'daily-claim') return out(dailyClaim_(d, true));
+    if (action === 'daily-release') return out(dailyClaim_(d, false));
     if (action === 'unpair') return out(unpair_(d));
     return out(send_(d));
   } catch (err) {
@@ -55,7 +62,7 @@ function doPost(e) {
 }
 
 function doGet() {
-  return out({ ok: true, service: APP_NAME + ' relay', version: 3 });
+  return out({ ok: true, service: APP_NAME + ' relay', version: 4 });
 }
 
 // ---- verification --------------------------------------------------------------------------------------------
@@ -122,6 +129,174 @@ function send_(d) {
 }
 
 
+// ---- midnight daily summary ---------------------------------------------------------------------------------
+var MAX_SNAPS = 8;
+
+function cleanSnap_(s) {
+  function n(v) { return Math.max(0, Math.round(Number(v) || 0)); }
+  return {
+    date: String(s.date), uid: String(s.uid), name: clip_(s.name || 'Child', 40), age: n(s.age),
+    balance: n(s.balance), pending: n(s.pending), earned: n(s.earned), mins: n(s.mins), scheduled: n(s.scheduled),
+    tasks: (s.tasks || []).slice(0, 5).map(function (x) { return { t: clip_(x.t, 40), p: n(x.p) }; }),
+    open: (s.open || []).slice(0, 4).map(function (x) { return { k: clip_(x.k, 12), n: clip_(x.n, 40), c: n(x.c) }; })
+  };
+}
+
+// Keeps the room's copy of the child's numbers and the verified parent addresses. Returns true when something changed.
+function storeDaily_(room, d) {
+  var changed = false;
+  if (d.tz && /^[A-Za-z_\/+\-0-9]{1,40}$/.test(String(d.tz)) && d.tz !== room.tz) { room.tz = String(d.tz); changed = true; }
+  if (d.snaps && d.snaps.length) {
+    room.snaps = room.snaps || {};
+    d.snaps.slice(0, 4).forEach(function (s) {
+      if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(String(s.date || '')) || !/^\d{1,20}$/.test(String(s.uid || ''))) return;
+      var c = cleanSnap_(s), k = c.date + '|' + c.uid;
+      if (JSON.stringify(room.snaps[k]) !== JSON.stringify(c)) { room.snaps[k] = c; changed = true; }
+    });
+    var keys = Object.keys(room.snaps).sort();
+    while (keys.length > MAX_SNAPS) { delete room.snaps[keys.shift()]; changed = true; }
+  }
+  if (d.to && d.to.length) {
+    var to = [];
+    d.to.slice(0, 4).forEach(function (x) {
+      var e = cleanEmail_(x && x.e);
+      if (e && x.t && String(x.t) === token_(e)) to.push({ e: e, n: clip_(x.n || '', 40) });
+    });
+    if (JSON.stringify(to) !== JSON.stringify(room.to || [])) { room.to = to; changed = true; }
+  }
+  return changed;
+}
+
+// Claims (or gives back) the right to send one child's report for one day. Kept apart from the room so sync cannot undo it.
+function claimSent_(roomId, key, claim) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var props = PropertiesService.getScriptProperties(), pk = 'sent:' + roomId;
+    var sent = JSON.parse(props.getProperty(pk) || '{}');
+    if (claim) {
+      if (sent[key]) return false;
+      sent[key] = Date.now();
+      var keys = Object.keys(sent).sort();
+      while (keys.length > 12) delete sent[keys.shift()];
+    } else {
+      delete sent[key];
+    }
+    props.setProperty(pk, JSON.stringify(sent));
+    return true;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function dailyClaim_(d, claim) {
+  var a = roomAuth_(d);
+  if (!a) return { ok: false, error: 'not paired' };
+  var key = String(d.key || '');
+  if (!/^\d{4}-\d{2}-\d{2}:\d{1,20}$/.test(key)) return { ok: false, error: 'bad key' };
+  var done = claimSent_(a.id, key, claim);
+  return claim ? { ok: true, claimed: done } : { ok: true };
+}
+
+function shiftDay_(day, n) {
+  var p = day.split('-').map(Number);
+  var t = new Date(Date.UTC(p[0], p[1] - 1, p[2] + n, 12));
+  return t.getUTCFullYear() + '-' + ('0' + (t.getUTCMonth() + 1)).slice(-2) + '-' + ('0' + t.getUTCDate()).slice(-2);
+}
+
+function esc_(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// Dark report in the same layout as the app's email. Every dark panel also carries a bgcolor so Gmail keeps it.
+function dailyHtml_(s, day, note) {
+  var F = 'font-family:Helvetica,Arial,sans-serif;';
+  function bg(c) { return ' bgcolor="' + c + '" style="background:' + c + ';background-image:linear-gradient(' + c + ',' + c + ');'; }
+  function sec(t) { return '<tr><td style="padding:18px 0 0 0;"><span style="display:inline-block;background:#2b2d31;color:#d9cfb8;' + F + 'font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:8px 14px;">' + t + '</span></td></tr>'; }
+  function row(l, v, c, b) { return '<tr><td style="padding:9px 0;border-bottom:1px solid #2b2d31;' + F + 'font-size:14px;color:' + (b ? '#eeece7' : '#9c9da0') + ';font-weight:' + (b ? 700 : 400) + ';">' + l + '</td><td align="right" style="padding:9px 0;border-bottom:1px solid #2b2d31;' + F + 'font-size:14px;font-weight:' + (b ? 700 : 400) + ';color:' + (c || '#eeece7') + ';">' + v + '</td></tr>'; }
+  function box(r) { return '<tr><td' + bg('#202226') + 'padding:4px 18px 8px 18px;"><table width="100%" cellpadding="0" cellspacing="0" border="0">' + r + '</table></td></tr>'; }
+  function text(t) { return '<tr><td' + bg('#202226') + 'padding:14px 18px;' + F + 'font-size:14px;color:#eeece7;line-height:1.5;">' + t + '</td></tr>'; }
+  var unused = Math.max(0, s.scheduled - s.mins), status = s.open.length ? 'Needs attention' : 'All clear';
+  var tasks = s.tasks.length ? s.tasks.map(function (x) { return '&bull; ' + esc_(x.t) + ' (+' + x.p + ' pts)'; }).join('<br>') : 'None.';
+  var open = s.open.length ? s.open.map(function (x) { return '&bull; ' + esc_(x.k) + ': ' + esc_(x.n) + (x.c ? ' (' + x.c + ' pts)' : ''); }).join('<br>') : 'None.';
+  var comment = esc_(s.name) + ' spent ' + s.mins + ' min screen free and earned ' + s.earned + ' points.' + (s.pending ? ' ' + s.pending + ' points are waiting for your approval.' : '');
+  return '<!doctype html><html style="background:#161719;color-scheme:dark;"><head><meta charset="utf-8"><meta name="color-scheme" content="dark"><meta name="supported-color-schemes" content="dark"></head><body bgcolor="#161719" style="margin:0;padding:0;background:#161719;">' +
+    '<table width="100%" cellpadding="0" cellspacing="0" border="0"' + bg('#161719') + '"><tr><td align="center" style="padding:24px 12px;">' +
+    '<table width="640" cellpadding="0" cellspacing="0" border="0"' + bg('#1b1d20') + 'width:100%;max-width:640px;"><tr><td style="padding:28px 28px 8px 28px;">' +
+    '<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td valign="middle"><div style="' + F + 'font-size:18px;font-weight:700;color:#eeece7;">&#10022; ' + APP_NAME + '</div><div style="' + F + 'font-size:12px;color:#9c9da0;margin-top:3px;">Daily summary &middot; sent at midnight</div></td>' +
+    '<td align="right" valign="middle"><div style="' + F + 'font-size:16px;font-weight:700;color:#eeece7;">' + esc_(day) + '</div><div style="' + F + 'font-size:12px;color:#9c9da0;margin-top:3px;">' + esc_(s.name) + '</div></td></tr></table></td></tr>' +
+    '<tr><td style="padding:0 28px;"><div' + bg('#d9cfb8') + 'height:3px;line-height:3px;font-size:0;">&nbsp;</div></td></tr>' +
+    '<tr><td style="padding:0 28px 28px 28px;"><table width="100%" cellpadding="0" cellspacing="0" border="0">' +
+    sec('Child') + box(row('Name', esc_(s.name)) + row('Age', s.age ? String(s.age) : '-') + row('Status', status, s.open.length ? '#f2b45a' : '#54cc88', true)) +
+    sec('Points') + box(row('Balance', s.balance + ' pts', null, true) + row('Pending approval', s.pending + ' pts', s.pending ? '#f2b45a' : null) + row('Earned that day', '+' + s.earned + ' pts', '#54cc88')) +
+    sec('Screen-free time') + box(row('Scheduled', s.scheduled + ' min') + row('Actual timer', s.mins + ' min', null, true) + row('Unused', unused + ' min')) +
+    sec('Open requests (' + s.open.length + ')') + text(open) + sec('Open tasks (' + s.tasks.length + ')') + text(tasks) + sec('Commentary') + text(comment + (note ? '<br><span style="color:#9c9da0;">' + esc_(note) + '</span>' : '')) +
+    '</table></td></tr><tr><td style="padding:0 28px 26px 28px;"><div style="border-top:1px solid #2b2d31;padding-top:16px;' + F + 'font-size:12px;color:#9c9da0;line-height:1.6;"><b style="color:#eeece7;font-size:13px;">' + APP_NAME + '</b><br>Open the app and sign in as a parent to approve points and decide requests.<br>The report is attached as a PDF. Balance is as of the last time the child\'s device synced.</div></td></tr>' +
+    '</table></td></tr></table></body></html>';
+}
+
+function dailyText_(s, day) {
+  return [APP_NAME + ' - Daily summary', 'Child: ' + s.name + (s.age ? ' (' + s.age + ')' : ''), 'Day: ' + day, '',
+    'Balance: ' + s.balance + ' pts', 'Pending approval: ' + s.pending + ' pts', 'Earned that day: ' + s.earned + ' pts',
+    'Screen free: ' + s.mins + ' of ' + s.scheduled + ' min', 'Open requests: ' + s.open.length, 'Open tasks: ' + s.tasks.length, '',
+    'Open the app and sign in as a parent to approve points and decide requests.'].join('\n');
+}
+
+function dailyPdf_(s, day) {
+  try {
+    var rows = [['Balance', s.balance + ' pts'], ['Pending approval', s.pending + ' pts'], ['Earned that day', '+' + s.earned + ' pts'], ['Screen free', s.mins + ' min of ' + s.scheduled + ' min']];
+    var h = '<html><body style="font-family:Arial,sans-serif;color:#222;"><h1 style="margin:0;">' + APP_NAME + '</h1><p style="color:#666;margin:2px 0 14px;">Daily summary &middot; ' + esc_(day) + ' &middot; ' + esc_(s.name) + (s.age ? ', age ' + s.age : '') + '</p><table style="width:100%;border-collapse:collapse;font-size:14px;">' +
+      rows.map(function (r) { return '<tr><td style="padding:8px;border-bottom:1px solid #ddd;color:#555;">' + r[0] + '</td><td style="padding:8px;border-bottom:1px solid #ddd;text-align:right;font-weight:bold;">' + esc_(r[1]) + '</td></tr>'; }).join('') + '</table>' +
+      '<h3>Open requests (' + s.open.length + ')</h3>' + (s.open.length ? s.open.map(function (x) { return '<div>' + esc_(x.k) + ': ' + esc_(x.n) + '</div>'; }).join('') : '<div>None.</div>') +
+      '<h3>Open tasks (' + s.tasks.length + ')</h3>' + (s.tasks.length ? s.tasks.map(function (x) { return '<div>' + esc_(x.t) + ' (+' + x.p + ' pts)</div>'; }).join('') : '<div>None.</div>') + '</body></html>';
+    var name = 'screen-free-rewards_summary_' + String(s.name).toLowerCase().replace(/[^a-z0-9]+/g, '-') + '_' + day + '.pdf';
+    return Utilities.newBlob(h, 'text/html', 'summary.html').getAs('application/pdf').setName(name);
+  } catch (err) {
+    return null;
+  }
+}
+
+// Hourly trigger. For every family it sends the report of the day that just ended (in that family's time zone) once.
+function midnightSummaries() {
+  var props = PropertiesService.getScriptProperties(), all = props.getProperties(), now = new Date(), count = 0;
+  Object.keys(all).forEach(function (k) {
+    if (k.indexOf('room:') !== 0) return;
+    var id = k.slice(5), room = JSON.parse(all[k]);
+    if (!room.snaps || !room.to || !room.to.length) return;
+    var tz = room.tz || Session.getScriptTimeZone(), local;
+    try { local = Utilities.formatDate(now, tz, 'yyyy-MM-dd'); } catch (e) { tz = Session.getScriptTimeZone(); local = Utilities.formatDate(now, tz, 'yyyy-MM-dd'); }
+    var yest = shiftDay_(local, -1), uids = {};
+    Object.keys(room.snaps).forEach(function (sk) { uids[sk.split('|')[1]] = 1; });
+    Object.keys(uids).forEach(function (uid) {
+      var snap = room.snaps[yest + '|' + uid], note = '';
+      if (!snap) {
+        var older = Object.keys(room.snaps).filter(function (sk) { return sk.split('|')[1] === uid && sk.split('|')[0] < yest; }).sort().pop();
+        if (!older) return;
+        snap = room.snaps[older];
+        note = 'The child\'s device did not sync on this day. These are the latest numbers from ' + snap.date + '.';
+      }
+      var key = yest + ':' + uid;
+      if (!claimSent_(id, key, true)) return;
+      var pdf = dailyPdf_(snap, yest), sentAny = false;
+      room.to.forEach(function (t) {
+        var to = cleanEmail_(t.e);
+        if (!to || !allow_('send:' + to, MAX_SENDS_PER_ADDRESS_PER_DAY) || !allow_('all', MAX_EMAILS_PER_DAY)) return;
+        var mail = { to: to, subject: APP_NAME + ' daily summary: ' + snap.name + ', ' + yest, body: dailyText_(snap, yest), htmlBody: dailyHtml_(snap, yest, note), name: APP_NAME };
+        if (pdf) mail.attachments = [pdf];
+        try { MailApp.sendEmail(mail); sentAny = true; count++; } catch (err) { /* quota or address problem: try the others */ }
+      });
+      if (!sentAny) claimSent_(id, key, false);
+    });
+  });
+  return count;
+}
+
+// Run once from the editor (Run, installMidnightTrigger) and approve the permissions.
+function installMidnightTrigger() {
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'midnightSummaries') ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger('midnightSummaries').timeBased().everyHours(1).create();
+}
+
 // ---- pairing, sync and remote controls ----------------------------------------------------------------------
 function randomText_(n) {
   var s = '';
@@ -137,8 +312,10 @@ function roomGet_(id) {
 function roomPut_(id, room) {
   while (JSON.stringify(room).length > MAX_ROOM_JSON) {
     var days = Object.keys(room.usage || {}).sort();
-    if (days.length <= 1) break;
-    delete room.usage[days[0]];
+    if (days.length > 1) { delete room.usage[days[0]]; continue; }
+    var snaps = Object.keys(room.snaps || {}).sort();
+    if (snaps.length <= 2) break;
+    delete room.snaps[snaps[0]];
   }
   PropertiesService.getScriptProperties().setProperty('room:' + String(id), JSON.stringify(room));
 }
@@ -228,6 +405,7 @@ function sync_(d) {
     while (days.length > 7) delete room.usage[days.shift()];
     changed = true;
   }
+  if (storeDaily_(room, d)) changed = true;
   if (Date.now() - (room.seen || 0) > 120000) { room.seen = Date.now(); changed = true; }
   if (changed) roomPut_(a.id, room);
   var q = String(d.date || date || '');
@@ -263,6 +441,7 @@ function unpair_(d) {
   var a = roomAuth_(d);
   if (!a) return { ok: false, error: 'not paired' };
   PropertiesService.getScriptProperties().deleteProperty('room:' + a.id);
+  PropertiesService.getScriptProperties().deleteProperty('sent:' + a.id);
   return { ok: true };
 }
 
@@ -313,7 +492,7 @@ function cleanup() {
   var today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
   Object.keys(all).forEach(function (k) { if (k.indexOf('n:') === 0 && k.indexOf('n:' + today + ':') !== 0) props.deleteProperty(k); });
   // rooms not used for 60 days
-  Object.keys(all).forEach(function (k) { if (k.indexOf('room:') === 0) { var r = JSON.parse(all[k]); if (Date.now() - (r.seen || r.created) > 60 * 86400000) props.deleteProperty(k); } });
+  Object.keys(all).forEach(function (k) { if (k.indexOf('room:') === 0) { var r = JSON.parse(all[k]); if (Date.now() - (r.seen || r.created) > 60 * 86400000) { props.deleteProperty(k); props.deleteProperty('sent:' + k.slice(5)); } } });
 }
 
 function out(obj) {

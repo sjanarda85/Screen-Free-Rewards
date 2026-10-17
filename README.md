@@ -6,6 +6,10 @@ Premium grained-charcoal dashboard for screen-free time. Children earn points fo
 
 Open [index.html](index.html) in a browser. No install step. It is always the latest version (see `VERSION` and [CHANGELOG.md](CHANGELOG.md)). Every version is kept as its own file in `releases/app/`, named `screen-free-rewards_app_v{version}_{date}_{label}.html`. The version also shows inside the app on the sign-in screen and the parent dashboard.
 
+## Rule: daily summary at midnight
+
+Every day at 00:00 each parent gets an email with the summary of the day that just ended and the PDF report. It is always on. The app sends it when it is open at midnight and catches up (up to 3 days) when opened later. For families whose app is closed, the mail relay (version 4) sends it from the last numbers the child's device synced, after the owner runs `installMidnightTrigger` once. See `apps-script/SETUP.md`.
+
 ## Install on a phone
 
 - **Android and iPhone, no store:** open the app link in the phone browser, then Android Chrome menu, Install app, or iPhone Safari Share, Add to Home Screen. It opens full screen and works offline.

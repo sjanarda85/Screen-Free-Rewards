@@ -27,7 +27,14 @@ If you change `Code.gs` later, use **Deploy, Manage deployments, Edit, New versi
 - Limits per address and per day (`MAX_SENDS_PER_ADDRESS_PER_DAY`, `MAX_CODES_PER_ADDRESS_PER_DAY`, `MAX_EMAILS_PER_DAY`) are at the top of `Code.gs`.
 
 ## Updating to this version
-If you already deployed an older `Code.gs`, replace its code with the new one and use **Deploy, Manage deployments, Edit, New version** (the link stays the same). Version 3 adds pairing, usage sync and remote controls.
+If you already deployed an older `Code.gs`, replace its code with the new one and use **Deploy, Manage deployments, Edit, New version** (the link stays the same). Version 4 adds the midnight daily summary (below). Version 3 added pairing, usage sync and remote controls.
+
+## Midnight daily summary (rule in the app)
+Every day at 00:00 each parent gets the summary of the day that just ended, with a PDF. This is a fixed rule in the app, not a setting.
+- **App open at midnight:** the app sends it at 00:00. If the phone was off, it sends the missed days (up to 3) the next time the app is opened.
+- **App closed (needs one step from you):** open the Apps Script editor, choose the function `installMidnightTrigger` and press Run. Approve the permissions once (it asks to manage triggers). From then on an hourly trigger emails every family whose app did not send, in that family's own time zone, in the first hour after their midnight. It works from the last numbers the child's device synced, and says so when the device did not sync that day.
+- **No duplicates:** the app and the relay claim each child's day first (`daily-claim`), so only one of them sends.
+- **Counts toward limits:** each report is one email per parent, so it uses the same daily quota as the other emails (see below).
 
 ## Remote controls: what to expect
 - Parent phones and the child's device check in every 30 seconds while the app is open. Each family therefore uses roughly 240 relay calls an hour while both phones are open, and each call counts toward Apps Script's daily run-time quota for your account. That is fine for a first group of families, not for hundreds.

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Builds the parent guide PDF (dark and light). Needs: pip install reportlab
-    python3 tools/make_guide_pdf.py 1.6.0 out_dir
+    python3 tools/make_guide_pdf.py 1.7.0 out_dir
 """
 import sys, os
 from reportlab.lib.pagesizes import A4
@@ -8,7 +8,7 @@ from reportlab.lib.units import mm
 from reportlab.lib.colors import HexColor
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.platypus import BaseDocTemplate, PageTemplate, Frame, Paragraph, Spacer, Table, TableStyle, PageBreak, KeepTogether
-VERSION = sys.argv[1] if len(sys.argv) > 1 else "1.6.0"
+VERSION = sys.argv[1] if len(sys.argv) > 1 else "1.7.0"
 OUT = sys.argv[2] if len(sys.argv) > 2 else "."
 THEMES = {
  "dark": dict(bg="#161719", card="#202226", chip="#2b2d31", chipT="#d9cfb8", ink="#eeece7", mut="#9c9da0", line="#33363b", gold="#d6b260", warnbg="#2a2418", warn="#f2b45a"),
@@ -98,6 +98,8 @@ def build(theme):
              [30 * mm, CW - 30 * mm], head=["Tab", "What you can do"]), Spacer(1, 12)]
     # ---- 4 email
     s += [H1("4. Emails and notifications"),
+          NOTE("<b>Rule: daily summary at midnight.</b> Every day at 00:00 each parent gets the summary of the day that just ended, with the PDF report. It is always on and cannot be switched off or changed to weekly. If the app is open at midnight it sends at 00:00. If the phone was off, it sends the missed days (up to 3) when the app is next opened. If the app is closed, the mail relay sends it from the last numbers the child's device synced, within the first hour after midnight, once the app owner has installed the midnight trigger."),
+          Spacer(1, 6),
           P("Each family receives its own emails, only at the addresses its parents entered and confirmed. Emails are sent by the mail relay that the app owner runs, from one Google account, so the sender is the same for every family."),
           TB([("Points earned", "Sent when a timer session ends with points. Can be switched off in Profile."),
               ("Task completed", "Sent when the child taps Done on a task. Can be switched off in Profile."),
