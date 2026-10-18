@@ -49,3 +49,7 @@ A connected parent phone shows an Approvals card: the child's usable points and 
 
 ## Know the limit before you sell widely
 A Google Apps Script relay sends from a normal Google account, which Google caps at about **100 emails a day** (about 1,500 with Google Workspace). Each family can generate many emails a day, so this is right for testing and a small first group of customers, not for hundreds of families. For wide sale, move the same relay to a transactional email service (for example Resend, Postmark or Amazon SES) behind a small server endpoint. The app does not change: it only needs a different link. Tell me when you are ready and I will build that endpoint.
+
+## Version 6: no verification code
+
+Parent addresses are enrolled automatically (`enroll` action), so a child's request is emailed at once. Open the script, paste the new Code.gs, then Deploy > Manage deployments > Edit > New version. Without this redeploy the app cannot set addresses up. Limits: 6 enrolments per address per day, 300 per day overall, 40 mails per address per day, and every mail carries a line saying why it arrived.

@@ -8,7 +8,7 @@ from reportlab.lib.units import mm
 from reportlab.lib.colors import HexColor
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.platypus import BaseDocTemplate, PageTemplate, Frame, Paragraph, Spacer, Table, TableStyle, PageBreak, KeepTogether
-VERSION = sys.argv[1] if len(sys.argv) > 1 else "1.10.3"
+VERSION = sys.argv[1] if len(sys.argv) > 1 else "1.10.4"
 OUT = sys.argv[2] if len(sys.argv) > 2 else "."
 THEMES = {
  "dark": dict(bg="#161719", card="#202226", chip="#2b2d31", chipT="#d9cfb8", ink="#eeece7", mut="#9c9da0", line="#33363b", gold="#d6b260", warnbg="#2a2418", warn="#f2b45a"),

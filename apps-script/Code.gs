@@ -31,6 +31,8 @@
 var APP_NAME = 'Screen Free Rewards';
 var MAX_SENDS_PER_ADDRESS_PER_DAY = 40;
 var MAX_CODES_PER_ADDRESS_PER_DAY = 4;
+var MAX_ENROLLS_PER_ADDRESS_PER_DAY = 6;
+var MAX_ENROLLS_PER_DAY = 300;
 var MAX_EMAILS_PER_DAY = 90;          // all families together; free Google accounts allow about 100 a day
 var MAX_ATTACHMENT_BASE64 = 200000;   // about 150 KB of PDF
 var MAX_HTML = 60000;
@@ -47,6 +49,7 @@ function doPost(e) {
     var action = String(d.action || 'send');
     if (action === 'verify') return out(startVerify_(d));
     if (action === 'confirm') return out(confirmVerify_(d));
+    if (action === 'enroll') return out(enroll_(d));
     if (action === 'pair-start') return out(pairStart_(d));
     if (action === 'pair-code') return out(pairCode_(d));
     if (action === 'pair-join') return out(pairJoin_(d));
@@ -64,7 +67,7 @@ function doPost(e) {
 }
 
 function doGet() {
-  return out({ ok: true, service: APP_NAME + ' relay', version: 5 });
+  return out({ ok: true, service: APP_NAME + ' relay', version: 6 });
 }
 
 // ---- verification --------------------------------------------------------------------------------------------
@@ -103,6 +106,17 @@ function confirmVerify_(d) {
   return { ok: true, token: token_(email) };
 }
 
+// Parents are enrolled automatically when the family saves their addresses: no code to type, so a child's
+// email goes out at once. The limits below keep the relay from being a spam tool, and every mail says why it arrived.
+function enroll_(d) {
+  var email = cleanEmail_(d.email);
+  if (!email) return { ok: false, error: 'bad email' };
+  if (!allow_('enroll:' + email, MAX_ENROLLS_PER_ADDRESS_PER_DAY)) return { ok: false, error: 'too many attempts for this address today' };
+  if (!allow_('enrollall', MAX_ENROLLS_PER_DAY)) return { ok: false, error: 'daily limit reached' };
+  return { ok: true, token: token_(email) };
+}
+var WHY_NOTE = '\n\nYou get this because your address was added as a parent in Screen Free Rewards. Not you? Just ignore these emails.';
+
 // ---- sending -------------------------------------------------------------------------------------------------
 function send_(d) {
   var to = cleanEmail_(d.to);
@@ -113,7 +127,7 @@ function send_(d) {
   var mail = {
     to: to,
     subject: clip_(d.subject || APP_NAME, 150),
-    body: clip_(d.message || '', MAX_TEXT),
+    body: clip_(d.message || '', MAX_TEXT) + WHY_NOTE,
     name: APP_NAME
   };
   if (d.htmlBody) mail.htmlBody = clip_(d.htmlBody, MAX_HTML);
@@ -308,7 +322,7 @@ function midnightSummaries() {
         var to = cleanEmail_(t.e);
         if (!to || !allow_('send:' + to, MAX_SENDS_PER_ADDRESS_PER_DAY) || !allow_('all', MAX_EMAILS_PER_DAY)) return;
         var vc = voice_(t.r, t.n, snap.name, Math.floor(Date.UTC(+yest.slice(0, 4), +yest.slice(5, 7) - 1, +yest.slice(8, 10)) / 86400000));
-        var mail = { to: to, subject: APP_NAME + ' daily summary: ' + snap.name + ', ' + yest, body: dailyText_(snap, yest, vc), htmlBody: dailyHtml_(snap, yest, note, vc), name: APP_NAME };
+        var mail = { to: to, subject: APP_NAME + ' daily summary: ' + snap.name + ', ' + yest, body: dailyText_(snap, yest, vc) + WHY_NOTE, htmlBody: dailyHtml_(snap, yest, note, vc), name: APP_NAME };
         if (pdf) mail.attachments = [pdf];
         try { MailApp.sendEmail(mail); sentAny = true; count++; } catch (err) { /* quota or address problem: try the others */ }
       });

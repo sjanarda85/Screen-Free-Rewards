@@ -508,7 +508,7 @@ body.is-locked { overflow: hidden; }
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
 function newPdf(){ if(!window.jspdf){ alert('PDF tools could not load. Check the internet connection and try again.'); return null; } return new window.jspdf.jsPDF(); }
-const APP_VERSION='1.10.3';
+const APP_VERSION='1.10.4';
 const SIGNUP_BONUS=50;
 function giveBonus(u,pts,why){ u.balance=(u.balance||0)+pts; (u.bonuses=u.bonuses||[]).push({ts:Date.now(),pts,why}); logA('bonus',u.name+' +'+pts+' pts, '+why,'sys'); }
 let state = {users:[], active:null, pin:'1234', rate:1, schedules:[], log:[], loggedIn:false};
@@ -696,7 +696,7 @@ function renderParent(){
   { const owner=!validMailUrl(DEFAULT_MAIL_LINK)||/[?&]admin=1/.test(location.search); document.getElementById('mailLinkBox').style.display=owner?'':'none'; document.getElementById('shareSetup').style.display=owner?'':'none'; }
   renderMailWait();
   { const vl=document.getElementById('verifyList'); const cs=parentContacts().filter(c=>c.email);
-    vl.innerHTML=cs.length?cs.map(c=>`<div class="item" style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><span>${esc(c.email)}</span>${isVerified(c.email)?'<b style="color:rgb(var(--pos));">Verified</b>':`<button class="btn small" type="button" data-e="${esc(c.email)}" onclick="verifyClick(this.dataset.e)">Verify</button>`}</div>`).join(''):'<div class="empty">Add a parent email, save, then verify it once so requests can be emailed to it.</div>'; }
+    vl.innerHTML=cs.length?cs.map(c=>`<div class="item" style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><span>${esc(c.email)}</span>${isVerified(c.email)?'<b style="color:rgb(var(--pos));">Ready</b>':`<button class="btn small" type="button" data-e="${esc(c.email)}" onclick="verifyClick(this.dataset.e)">Set up</button>`}</div>`).join(''):'<div class="empty">Add a parent email and save. Emails to it start automatically.</div>'; }
   const u=getU(); if(!u) return;
   document.getElementById('bal').textContent=Math.floor(u.balance||0);
   document.getElementById('pend').textContent=Math.floor(u.pending||0);
@@ -827,7 +827,7 @@ function emailFrame(o){
 <td align="right" valign="middle"><div style="${EF}font-size:16px;font-weight:700;color:#ffffff;">${o.dateStr}</div><div style="${EF}font-size:12px;color:#dbeafe;margin-top:4px;">${o.who}</div></td></tr></table></td></tr>
 <tr><td style="background:${LC.bar};height:4px;line-height:4px;font-size:0;" bgcolor="${LC.bar}">&nbsp;</td></tr>
 <tr><td style="padding:8px 28px 28px 28px;background:${LC.card};" bgcolor="${LC.card}"><table width="100%" cellpadding="0" cellspacing="0" border="0">${o.voice?voiceBubble(o.voice):''}${o.body}${o.voice?voiceSign(o.voice):''}</table></td></tr>
-<tr><td bgcolor="${LC.foot}" style="background:${LC.foot};padding:20px 28px 24px 28px;border-radius:0 0 14px 14px;border-top:1px solid ${LC.line};"><div style="${EF}font-size:12px;color:${LC.mut};line-height:1.7;"><b style="color:${LC.blue};font-size:13px;">Screen Free Rewards</b><br>${o.footer}</div></td></tr>
+<tr><td bgcolor="${LC.foot}" style="background:${LC.foot};padding:20px 28px 24px 28px;border-radius:0 0 14px 14px;border-top:1px solid ${LC.line};"><div style="${EF}font-size:12px;color:${LC.mut};line-height:1.7;"><b style="color:${LC.blue};font-size:13px;">Screen Free Rewards</b><br>${o.footer}<br><span style="font-size:11px;">You get this because your address was added as a parent in Screen Free Rewards. Not you? Just ignore these emails.</span></div></td></tr>
 </table></td></tr></table></body></html>`;
 }
 const eSec=t=>`<tr><td style="padding:22px 0 8px 0;"><span style="display:inline-block;background:${LC.chip};color:${LC.blue};${EF}font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:7px 14px;border-radius:999px;">${t}</span></td></tr>`;
@@ -948,6 +948,13 @@ function emailKey(e){ return String(e||'').trim().toLowerCase(); }
 function tokenFor(email){ return ((state.parent&&state.parent.tokens)||{})[emailKey(email)]||''; }
 function isVerified(email){ return !!tokenFor(email); }
 function forgetToken(email){ if(state.parent&&state.parent.tokens){ delete state.parent.tokens[emailKey(email)]; save(); } }
+// No code to type: the relay hands out the address token as soon as the parent address is saved
+async function enrollEmail(email){
+  if(isVerified(email)) return true;
+  if(!validMailUrl(mailUrl())) return false;
+  try{ const r=await relayCall({action:'enroll', email}); if(!r.token) return false; state.parent=state.parent||{}; state.parent.tokens=state.parent.tokens||{}; state.parent.tokens[emailKey(email)]=r.token; save(); return true; }catch(err){ return false; }
+}
+async function enrollAll(){ let n=0; for(const c of parentContacts().filter(c=>c.email)) if(await enrollEmail(c.email)) n++; return n; }
 async function postMail(to, subject, message, att, html){
   return relayCall({to, subject, message, htmlBody:html||'', fromName:'Screen Free Rewards', attachmentName:att?att.name:'', attachmentBase64:att?att.uri:'', token:tokenFor(to)});
 }
@@ -967,17 +974,18 @@ function ensureMailLink(){
   if(!validMailUrl(link)){ alert('That does not look like a mail link. It should start with https://script.google.com/macros/s/ and end with /exec.'); return false; }
   state.parent=state.parent||{}; state.parent.mailUrl=link; save(); renderParent(); return true;
 }
-window.verifyClick=async email=>{ try{ if(!ensureMailLink()) return; await verifyEmail(email); }catch(err){ alert('Could not verify '+email+': '+(err&&err.message||'offline')); } };
+window.verifyClick=async email=>{ if(!ensureMailLink()) return; if(await enrollEmail(email)){ toast(email+' is ready'); renderParent(); flushOutbox(); } else alert('Could not set up '+email+'. Check the internet connection and try again.'); };
 async function deliver(subject, body, u, opts){
   opts=opts||{}; const contacts=parentContacts(), emails=contacts.map(c=>c.email).filter(Boolean).filter(e=>!opts.only||opts.only.includes(e));
   if(!opts.retry) logA('parent_alert', subject+' -> '+(emails.join(', ')||'in-app only'), 'child');
   if(!opts.retry && window.Notification && Notification.permission==='granted'){ try { new Notification(subject, { body: body.slice(0, 180) }); } catch(e){} }
   const results=[]; if(!emails.length || !validMailUrl(mailUrl())) return {emails, results:emails.map(e=>({email:e,ok:false,msg:'mail link not set'})), lines:[], sent:0, noLink:!validMailUrl(mailUrl())};
-  if(!emails.some(isVerified)) return {emails, results:emails.map(e=>({email:e,ok:false,msg:'not verified yet'})), lines:emails.map(e=>e+': not verified yet'), sent:0, unverified:true};
+  if(!emails.every(isVerified)) await Promise.all(emails.filter(e=>!isVerified(e)).map(enrollEmail));
+  if(!emails.some(isVerified)) return {emails, results:emails.map(e=>({email:e,ok:false,msg:'not verified yet'})), lines:emails.map(e=>e+': could not be set up, check the internet and the mail link'), sent:0, unverified:true};
   const att=opts.pdf===false?null:{name:pdfFileName(u,opts.day), uri:summaryPdfFor(u,opts.test,opts.day)}, kind=opts.kind||'summary', seed=opts.seed!==undefined?opts.seed:Math.floor(Math.random()*1000);
   for(const email of emails){
     let ok=false, msg='';
-    if(!isVerified(email)){ results.push({email, ok:false, msg:'not verified yet'}); continue; }
+    if(!isVerified(email)){ results.push({email, ok:false, msg:'could not be set up'}); continue; }
     const c=contacts.find(x=>x.email===email)||{}, v=voiceFor(kind,c,u,opts.vars,seed);
     const html=opts.htmlFn?opts.htmlFn(v):(opts.html||summaryHTML(u,{test:opts.test,pdf:true,day:opts.day,voice:v}));
     try{ await postMail(email, subject, voiceText(v)+body+'\n\n'+v.outro, att, html); ok=true; msg='sent'; }catch(err){ msg='not sent ('+(err&&err.name==='AbortError'?'timed out':(err&&err.message)||'offline')+')'; if(/not verified/i.test(err&&err.message||'')) forgetToken(email); }
@@ -997,7 +1005,7 @@ function queueMail(e){
   const q=outbox(); q.push(Object.assign({id:Date.now()+Math.random(),ts:Date.now(),tries:0},e)); while(q.length>30) q.shift(); save(); renderMailWait();
 }
 function pendingMailCount(){ return ((state.parent&&state.parent.outbox)||[]).length; }
-function mailWhy(r){ return r.noLink?'The mail link is not set.':r.unverified?'A parent must confirm their email once (Parent controls, Profile, Verify).':r.lines.join(' '); }
+function mailWhy(r){ return r.noLink?'The mail link is not set.':r.lines.join(' '); }
 function sendEntry(e,u,only){
   if(e.t==='event'){ return deliver(e.subject,e.text,u,{pdf:false,kind:e.kind,vars:e.vars,only,retry:e.tries>0,htmlFn:v=>eventHTML(u,{title:e.title,rows:e.rows,voice:v})}); }
   return deliver(e.subject,e.body,u,{kind:e.kind,vars:e.vars,only,retry:e.tries>0});
@@ -1013,7 +1021,7 @@ async function sendOrQueue(e){
 }
 let _flushing=false;
 async function flushOutbox(){
-  if(_flushing||!pendingMailCount()||!validMailUrl(mailUrl())||!parentContacts().some(c=>c.email&&isVerified(c.email))) return;
+  if(_flushing||!pendingMailCount()||!validMailUrl(mailUrl())) return;
   _flushing=true;
   try{
     const q=outbox().slice(), keep=[];
@@ -1031,11 +1039,11 @@ async function flushOutbox(){
 }
 function renderMailWait(){
   const n=pendingMailCount(), txt=n?(n+' message'+(n>1?'s':'')+' waiting to reach your parents. '):'';
-  const w=document.getElementById('mailWait'); if(w){ w.style.display=n?'':'none'; w.textContent=n?txt+'They go out by themselves once a parent has confirmed their email.':''; }
+  const w=document.getElementById('mailWait'); if(w){ w.style.display=n?'':'none'; w.textContent=n?txt+'They will be sent automatically as soon as the connection works.':''; }
   const b=document.getElementById('mailWaitParent'); if(b){ b.style.display=n?'':'none'; const un=parentContacts().filter(c=>c.email&&!isVerified(c.email)).length;
-    b.innerHTML=n?`<b>${txt}</b>${validMailUrl(mailUrl())?(un?'A parent email is not confirmed yet. ':'Retrying now. '):'The mail link is not set. '}${un&&validMailUrl(mailUrl())?'<button class="btn small" type="button" onclick="verifyPending()">Confirm email now</button>':''}`:''; }
+    b.innerHTML=n?`<b>${txt}</b>${validMailUrl(mailUrl())?(un?'These could not be sent yet. ':'Retrying now. '):'The mail link is not set. '}${un&&validMailUrl(mailUrl())?'<button class="btn small" type="button" onclick="verifyPending()">Send now</button>':''}`:''; }
 }
-window.verifyPending=async()=>{ try{ if(!ensureMailLink()) return; for(const c of parentContacts().filter(c=>c.email&&!isVerified(c.email))){ await verifyEmail(c.email); } await flushOutbox(); }catch(err){ alert('Could not verify: '+(err&&err.message||'offline')); } renderMailWait(); };
+window.verifyPending=async()=>{ if(!ensureMailLink()) return; await enrollAll(); await flushOutbox(); renderMailWait(); };
 if(!window._outT){ window._outT=setInterval(flushOutbox,30000); window.addEventListener('online',flushOutbox); document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') flushOutbox(); }); }
 // Child requests: sent straight away, queued and retried if a parent address is not ready
 async function notifyParents(subject, body, kind, vars){
@@ -1069,11 +1077,6 @@ async function sendSummary(u, manual, test, day){
     const e=(prompt('Parent email to send to:')||'').trim();
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) { alert('Add a valid parent email first.'); return null; }
     state.parent=state.parent||{}; state.parent.email=e; save(); renderParent();
-  }
-  if(manual){
-    for(const c of parentContacts().filter(c=>c.email&&!isVerified(c.email))){
-      try{ if(!(await verifyEmail(c.email))) { toast('Skipped '+c.email+' (not verified)'); } }catch(err){ alert('Could not verify '+c.email+': '+(err&&err.message||'offline')); }
-    }
   }
   const r=await deliver(subject, body, u, {test,day,kind:'summary',seed:Math.floor((day?new Date(+day.slice(0,4),+day.slice(5,7)-1,+day.slice(8,10)):new Date()).getTime()/86400000)});
   if(manual){
@@ -1162,7 +1165,7 @@ document.getElementById('sendAsk').onclick=()=>{
   document.getElementById('askDesc').value='';
   document.getElementById('askModal').classList.remove('active');
   notifyParents((asReward?'Reward suggestion':'Request')+' from '+u.name, u.name+' asks: '+name+(desc?'\n'+desc:'')+'\n\nOpen Screen Free Rewards, sign in as a parent, and approve or decline under Requests.', asReward?'suggest':'ask', {title:name}).then(r=>{
-    toast(!r.queued&&r.sent?'Request emailed to both parents':'Request saved. Emails go out as soon as a parent confirms their email.');
+    toast(!r.queued&&r.sent?'Request emailed to both parents':'Could not email yet. It will be retried automatically.');
   });
 };
 document.getElementById('pointsPill').onclick=()=>{
@@ -1189,7 +1192,7 @@ window.reqRedeem=(id)=>{
   u.requests=u.requests||[];
   u.requests.unshift({id:Date.now(), kind:'redeem', name:r.name, desc:r.desc||'', cost:r.cost, rewardId:r.id, status:'pending', ts:Date.now()});
   notifyParents('Redeem request from '+u.name, u.name+' wants to redeem '+r.name+' for '+r.cost+' points.\n\nSign in as a parent and approve or decline under Requests. Declining refunds the points.', 'redeem', {reward:r.name, cost:r.cost}).then(r2=>{
-    toast(!r2.queued&&r2.sent?'Points held. Request emailed to both parents':'Points held. Emails go out as soon as a parent confirms their email.');
+    toast(!r2.queued&&r2.sent?'Points held. Request emailed to both parents':'Points held. Could not email yet. It will be retried automatically.');
   });
   save(); updateUI();
   document.getElementById('redeemModal').classList.remove('active');
@@ -1220,7 +1223,8 @@ document.getElementById('saveProfile').onclick = async () => {
   logA('profile_update', 'Parent profile saved', 'parent');
   toast('Profile saved. Emails to parents go out automatically.'); renderParent();
   if(validMailUrl(mailUrl())){
-    for(const c of parentContacts().filter(c=>c.email&&!isVerified(c.email))){ try{ if(!(await verifyEmail(c.email))) toast('Confirm '+c.email+' later with Verify, or the child\'s emails will wait.'); }catch(err){ alert('Could not confirm '+c.email+': '+(err&&err.message||'offline')+'. Use Verify in Profile to try again; the child\'s emails wait until then.'); } }
+    const n=await enrollAll(); if(n<parentContacts().filter(c=>c.email).length) toast('Could not set up every parent email. Check the internet and try Save again.');
+    renderParent();
     flushOutbox();
   }
 };
@@ -1270,7 +1274,7 @@ document.getElementById('doSetup').onclick=async()=>{
   state.active=id; state.schedules=[{day:'weekday',from:'16:00',to:'21:00'},{day:'weekend',from:'10:00',to:'21:00'}]; state.log=[]; state.loggedIn=true; save();
   logA('setup','Family set up for '+child,'parent'); giveBonus(state.users[0],SIGNUP_BONUS,'welcome bonus'); show('childView'); startLoop();
   if(validMailUrl(mailUrl())){
-    for(const e of [email,email2].filter(Boolean)){ try{ if(!(await verifyEmail(e))) toast('You can verify '+e+' later in Parent controls, Profile.'); }catch(err){ alert('Could not verify '+e+': '+(err&&err.message||'offline')+'. You can verify later in Parent controls, Profile.'); } }
+    await enrollAll();
     await showPairModal();
   } else toast('Setup done. Email notifications start once the app owner adds the mail link.');
 };
@@ -1546,6 +1550,7 @@ function renderMidnightStatus(){
 async function sendDay(u,day){
   const p=state.parent; p.dailyDone=p.dailyDone||{}; const key=day+':'+u.id;
   if(p.dailyDone[key]) return 'done';
+  if(validMailUrl(mailUrl())) await enrollAll();
   if(!validMailUrl(mailUrl())||!parentContacts().some(c=>c.email&&isVerified(c.email))){ if(!validMailUrl(mailUrl())||!parentContacts().some(c=>c.email)){ p.dailyDone[key]=1; logA('daily_skipped',u.name+' '+day+' (no verified parent email)','sys'); return 'skip'; } return 'retry'; }
   let claimed=false;
   if(paired()){

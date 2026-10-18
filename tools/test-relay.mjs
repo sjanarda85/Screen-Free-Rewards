@@ -22,6 +22,7 @@ const pdf=Buffer.from('%PDF-1.4\nhello\n%%EOF').toString('base64');
   const code=sent[0].subject.match(/(\d{6})$/)[1];
   ok(post({action:'confirm',email:'parent@example.com',code:'000000'}).error==='wrong code','wrong code rejected');
   r=post({action:'confirm',email:'parent@example.com',code}); ok(r.ok && /^[0-9a-f]{64}$/.test(r.token),'right code returns token');
+  { const e=post({action:'enroll',email:'new@example.com'}); ok(e.ok && /^[0-9a-f]{64}$/.test(e.token),'enroll returns a token without a code'); const m=post({to:'new@example.com',token:e.token,subject:'x',message:'hi'}); ok(m.ok && /Not you\?/.test(sent[sent.length-1].body),'enrolled address can be mailed, mail says why'); let z; for(let i=0;i<8;i++) z=post({action:'enroll',email:'spam@example.com'}); ok(!z.ok,'enroll is rate limited per address'); ok(!post({action:'enroll',email:'nope'}).ok,'bad address refused'); }
   const tok=r.token;
   ok(post({to:'parent@example.com',subject:'s',message:'m'}).error==='not verified','send without token blocked');
   ok(post({to:'parent@example.com',subject:'s',message:'m',token:'x'.repeat(64)}).error==='not verified','send with wrong token blocked');
@@ -42,7 +43,7 @@ const pdf=Buffer.from('%PDF-1.4\nhello\n%%EOF').toString('base64');
 { const {post,sent}=makeEnv(); post({action:'verify',email:'p@example.com'}); const code=sent[0].subject.match(/(\d{6})$/)[1]; const tok=post({action:'confirm',email:'p@example.com',code}).token; sent.length=0;
   let n=0; for(let i=0;i<45;i++){ if(post({to:'p@example.com',subject:'s',message:'m',token:tok}).ok) n++; } ok(n===40,'per-address cap 40, got '+n);
   const g=makeEnv(); let total=0; for(let i=0;i<100;i++){ const em='u'+i+'@example.com'; const r=g.post({action:'verify',email:em}); if(r.ok) total++; } ok(total===90,'global cap 90 incl codes, got '+total);
-  ok(JSON.parse(makeEnv().env.doGet().t).version===5,'doGet'); }
+  ok(JSON.parse(makeEnv().env.doGet().t).version===6,'doGet'); }
 // ---- pairing, sync and remote controls
 { const {post,advance,props}=makeEnv();
   const room=post({action:'pair-start',childName:'Mira'}); ok(room.ok && room.roomId.length===10 && /^[0-9a-f]{32}$/.test(room.secret) && /^[A-HJKMNP-Z2-9]{4}-[A-HJKMNP-Z2-9]{4}$/.test(room.code),'pair-start returns room, secret and a clean code');
